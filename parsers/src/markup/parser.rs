@@ -1,6 +1,6 @@
 // Dependencies
 use xml::reader::EventReader;
-use xml::reader::events::*;
+use xml::reader::XmlEvent;
 use xml::attribute::OwnedAttribute;
 use std::io::Read;
 
@@ -58,7 +58,14 @@ impl<E, B> Parser<E, B>
 
         'doc: loop {
 
-            match self.parser.next() {
+            let next_ev = match self.parser.next() {
+                Ok(e) => e,
+                Err(err) => {
+                    self.err.log(format!("Error: {}", err));
+                    break 'doc;
+                }
+            };
+            match next_ev {
                 XmlEvent::StartElement { name, attributes, .. } => {
 
                     let test_parse = self.parse_root_tag(
@@ -72,10 +79,6 @@ impl<E, B> Parser<E, B>
                         Err((ErrorType::Fatal, _)) => break 'doc,
                         _ => ()
                     }
-                }
-                XmlEvent::Error(e) => {
-                    self.err.log(format!("Error: {}", e));
-                    break 'doc;
                 }
                 XmlEvent::EndDocument => break 'doc,
                 XmlEvent::StartDocument { .. } => (),
@@ -307,7 +310,14 @@ impl<E, B> Parser<E, B>
     {
         let mut depth = 1i32;
         loop {
-            match self.parser.next() {
+            let next_ev = match self.parser.next() {
+                Ok(e) => e,
+                Err(err) => {
+                    self.err.log(format!("Error: {}", err));
+                    return Err((ErrorType::Fatal, ErrorStatus::Reported));
+                }
+            };
+            match next_ev {
                 XmlEvent::StartElement { name, .. } => {
 
                     depth += 1;
@@ -327,11 +337,6 @@ impl<E, B> Parser<E, B>
                         return Ok(());
                     }
                 }
-                XmlEvent::Error( e ) => {
-
-                    self.err.log(format!("Error: {}", e));
-                    return Err((ErrorType::Fatal, ErrorStatus::Reported));
-                }
                 _ => ()
             }
         }
@@ -343,7 +348,14 @@ impl<E, B> Parser<E, B>
                 -> Result<(), ParseError>
     {
         loop {
-            match self.parser.next() {
+            let next_ev = match self.parser.next() {
+                Ok(e) => e,
+                Err(err) => {
+                    self.err.log(format!("Error: {}", err));
+                    return Err((ErrorType::Fatal, ErrorStatus::Reported));
+                }
+            };
+            match next_ev {
                 XmlEvent::StartElement { name, attributes, .. } => {
 
                     let test_parse_child = self.parse_tag(
@@ -368,11 +380,6 @@ impl<E, B> Parser<E, B>
                 }
                 XmlEvent::Characters( text ) => {
                     self.parse_data_binding(&text, parent);
-                }
-                XmlEvent::Error( e ) => {
-
-                    self.err.log(format!("Error: {}", e));
-                    return Err((ErrorType::Fatal, ErrorStatus::Reported));
                 }
                 XmlEvent::EndDocument => unreachable!(),
                 _ => ()

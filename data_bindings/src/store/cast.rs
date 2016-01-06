@@ -5,7 +5,7 @@ use std::ops::Deref;
 
 /// A type that want to be converted into from a `StoreValue`
 /// must implement this trait.
-pub trait Cast {
+pub trait Cast: Sized {
 
     /// Try to cast the given StoreValue into Self.
     /// If the StoreValue has an appropriate type, return

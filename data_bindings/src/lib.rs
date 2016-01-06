@@ -1,6 +1,5 @@
-#![feature(hashmap_hasher)]
-#![feature(reflect_marker)]
-#![feature(test)]
+#![cfg_attr(feature = "nightly", feature(test))]
+#[cfg(feature = "nightly")]
 extern crate test as bench;
 
 #[macro_use]

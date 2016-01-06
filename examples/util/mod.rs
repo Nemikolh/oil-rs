@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path::Path;
 use std::thread;
 
-use glium::DisplayBuild;
+use glutin::glium::DisplayBuild;
 use oil::RenderBackbend;
 use oil;
 use glutin;

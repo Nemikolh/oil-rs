@@ -17,15 +17,18 @@ from web development for game development with Rust.
 Okay, now a few more things to keep in mind before getting started:
 
 * The library is young and still in its early development stage. Don't expect speed yet.
-* A video game in development is currently using Uil, leading the design decisions for Uil.
+* A video game in development is currently using Oil, leading the design decisions for Oil.
   It essentially means some feature might be set as lower/higher priority because of the main project.
 * Contributions are welcomed !
 
 ## [Getting-started](http://oil-lang.github.io/#getting-started)
 
+Oil now work on Rust stable (1.6 as of writing). You only need to add the following
+to you `Cargo.toml` file:
+
 ```toml
 [dependencies]
-oil = "*"
+oil = "0.2.0"
 ```
 
 For a concrete example, you should have a look at the examples in the `examples/` folder.

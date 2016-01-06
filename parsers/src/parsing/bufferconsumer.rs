@@ -1,13 +1,16 @@
 use std::f32;
+use std::collections::VecDeque;
+use std::str::FromStr;
 use std::io::Read;
 use std::io::Chars;
 use super::Error;
-
+use super::util;
 
 pub struct BufferConsumer<B> {
     row: usize,
     col: usize,
-    buffer: Chars<B>,
+    char_queue: VecDeque<char>,
+    buffer: B,
     tmp_char: Option<char>,
 }
 
@@ -18,7 +21,8 @@ impl<B> BufferConsumer<B>
         BufferConsumer {
             row: 0,
             col: 0,
-            buffer: reader.chars(),
+            char_queue: VecDeque::with_capacity(4),
+            buffer: reader,
             tmp_char: None,
         }
     }
@@ -37,7 +41,7 @@ impl<B> BufferConsumer<B>
 
     pub fn consume_number(&mut self) -> Result<f32, Error> {
         let num: String = try!(self.consume_while(is_numeric));
-        f32::from_str_radix(&num, 10)
+        f32::from_str(&num)
             .map_err(|err| {
                 Error::new(self.row, self.col, format!("Incorrect float value: {}", err))
             })

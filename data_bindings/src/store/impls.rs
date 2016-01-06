@@ -2,8 +2,8 @@ use std::collections::{
     HashMap
 };
 use std::slice;
-use std::marker::Reflect;
-use std::collections::hash_state::HashState;
+use std::any::Any;
+// use std::collections::hash_state::HashState;
 
 use lookup::{
     PropertyAccessor,
@@ -109,7 +109,7 @@ impl<'a, T> Iterator for WrapperIterMut<'a, T>
 /// It works similarly to the impl above for `T` when `T: Into<StoreValue> + Cast`.
 /// The get_attribute transforms `&'a [T]` into a `StoreValue::List`
 impl<T> Store for Vec<T>
-    where T: Store + Reflect
+    where T: Store + Any
 {
     fn get_attribute<'a>(&'a self, k: PropertyAccessor) -> AttributeGetResult<'a> {
         match k.name() {
@@ -150,9 +150,11 @@ impl<T> Store for Vec<T>
 
 /// This implementation allows for property names such as `foo.bar`
 /// The rule follows the logic given by the `PrefixKeyIter` iterator.
-impl<S, T> Store for HashMap<String, T, S>
-    where S: HashState + Reflect + 'static,
-          T: Store
+// impl<S, T> Store for HashMap<String, T, S>
+//       where S: HashState + Any + 'static,
+//             T: Store
+impl<T> Store for HashMap<String, T>
+       where T: Store
 {
 
     fn get_attribute<'a>(&'a self, k: PropertyAccessor) -> AttributeGetResult<'a> {
@@ -226,9 +228,6 @@ mod test {
     use store::StoreValue;
     use Store;
     use PropertyAccessor;
-    use bench::Bencher;
-    use num::traits::ToPrimitive;
-    use std::collections::HashMap;
 
     #[derive(Clone)]
     struct A {
@@ -280,75 +279,87 @@ mod test {
         assert_eq!(iter.next().unwrap().get_attribute(PropertyAccessor::new("b")).unwrap(), StoreValue::Integer(1));
     }
 
-    #[bench]
-    fn vec_direct_access(b: &mut Bencher) {
-        let total = 1000;
-        let v = A {
-            a: vec![B { b: 1, c: C { a: Vec::new(), b: 1 }}; total],
-        };
+    #[cfg(feature = "nightly")]
+    mod bench {
 
-        b.iter(|| {
-            let mut sum = 0;
-            for i in v.a.iter() {
-                sum += i.b;
-            }
-            assert_eq!(sum, total.to_u32().unwrap());
-        });
-    }
+        use bench::Bencher;
+        use num::traits::ToPrimitive;
+        use std::collections::HashMap;
+        use store::StoreValue;
+        use Store;
+        use PropertyAccessor;
+        use super::{A, B, C};
 
-    #[bench]
-    fn vec_hashmap_access(b: &mut Bencher) {
-        let total = 1000;
-        let mut h = HashMap::new();
-        h.insert("c.b", 1);
-        let v = vec![h; total];
+        #[bench]
+        fn vec_direct_access(b: &mut Bencher) {
+            let total = 1000;
+            let v = A {
+                a: vec![B { b: 1, c: C { a: Vec::new(), b: 1 }}; total],
+            };
 
-        b.iter(|| {
-            let mut sum = 0;
-            for i in v.iter() {
-                sum += *i.get("c.b").unwrap();
-            }
-            assert_eq!(sum, total.to_u32().unwrap());
-        });
-    }
-
-    #[bench]
-    fn vec_store_access(b: &mut Bencher) {
-        let total = 1000;
-        let v = A {
-            a: vec![B { b: 1, c: C { a: Vec::new(), b: 1 }}; total],
-        };
-
-        b.iter(|| {
-            let mut sum = 0;
-            let iter = v.get_attribute(PropertyAccessor::new("a")).unwrap_iter();
-            for i in iter {
-                sum += match i.get_attribute(PropertyAccessor::new("b")).unwrap() {
-                    StoreValue::Integer(i) => i,
-                    _ => 0,
+            b.iter(|| {
+                let mut sum = 0;
+                for i in v.a.iter() {
+                    sum += i.b;
                 }
-            }
-            assert_eq!(sum, total.to_i64().unwrap());
-        });
-    }
+                assert_eq!(sum, total.to_u32().unwrap());
+            });
+        }
 
-    #[bench]
-    fn vec_store_2indirection_access(b: &mut Bencher) {
-        let total = 1000;
-        let v = A {
-            a: vec![B { b: 1, c: C { a: Vec::new(), b: 1 }}; total],
-        };
+        #[bench]
+        fn vec_hashmap_access(b: &mut Bencher) {
+            let total = 1000;
+            let mut h = HashMap::new();
+            h.insert("c.b", 1);
+            let v = vec![h; total];
 
-        b.iter(|| {
-            let mut sum = 0;
-            let iter = v.get_attribute(PropertyAccessor::new("a")).unwrap_iter();
-            for i in iter {
-                sum += match i.get_attribute(PropertyAccessor::new("c.b")).unwrap() {
-                    StoreValue::Integer(i) => i,
-                    _ => 0,
+            b.iter(|| {
+                let mut sum = 0;
+                for i in v.iter() {
+                    sum += *i.get("c.b").unwrap();
                 }
-            }
-            assert_eq!(sum, total.to_i64().unwrap());
-        });
-    }
+                assert_eq!(sum, total.to_u32().unwrap());
+            });
+        }
+
+        #[bench]
+        fn vec_store_access(b: &mut Bencher) {
+            let total = 1000;
+            let v = A {
+                a: vec![B { b: 1, c: C { a: Vec::new(), b: 1 }}; total],
+            };
+
+            b.iter(|| {
+                let mut sum = 0;
+                let iter = v.get_attribute(PropertyAccessor::new("a")).unwrap_iter();
+                for i in iter {
+                    sum += match i.get_attribute(PropertyAccessor::new("b")).unwrap() {
+                        StoreValue::Integer(i) => i,
+                        _ => 0,
+                    }
+                }
+                assert_eq!(sum, total.to_i64().unwrap());
+            });
+        }
+
+        #[bench]
+        fn vec_store_2indirection_access(b: &mut Bencher) {
+            let total = 1000;
+            let v = A {
+                a: vec![B { b: 1, c: C { a: Vec::new(), b: 1 }}; total],
+            };
+
+            b.iter(|| {
+                let mut sum = 0;
+                let iter = v.get_attribute(PropertyAccessor::new("a")).unwrap_iter();
+                for i in iter {
+                    sum += match i.get_attribute(PropertyAccessor::new("c.b")).unwrap() {
+                        StoreValue::Integer(i) => i,
+                        _ => 0,
+                    }
+                }
+                assert_eq!(sum, total.to_i64().unwrap());
+            });
+        }
+    } // mod bench
 }

@@ -10,5 +10,9 @@ keywords = ["ui", "data-bindings"]
 description = "Data-bindings crate for oil."
 
 [dependencies]
-mopa = "0.2.0"
-num = "*"
+mopa = "0.2.1"
+num = "0.1.30"
+
+[features]
+default = []
+nightly = []

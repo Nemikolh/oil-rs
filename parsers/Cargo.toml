@@ -1,20 +1,23 @@
 
 [package]
 name = "oil_parsers"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Nemikolh <joan.varvenne@gmail.com>", "Vaelden <maugan.villatel@gmail.com>"]
 homepage = "http://oil-lang.github.io/"
 repository = "https://github.com/oil-lang/oil-rs"
 license = "MIT"
 keywords = ["ui", "parser"]
 description = "Parsers for oil."
+build = "build.rs"
 
 [dependencies]
-xml-rs = "*"
-phf = "*"
-phf_macros = "*"
-num = "*"
+xml-rs = "0.3.0"
+phf = "0.7.12"
+num = "0.1.30"
+
+[build-dependencies]
+phf_codegen = "0.7.12"
 
 [dependencies.oil_shared]
 path = "../shared"
-version = "=0.1.0"
+version = "=0.2.0"
