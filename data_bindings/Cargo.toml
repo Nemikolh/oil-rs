@@ -11,4 +11,4 @@ description = "Data-bindings crate for oil."
 
 [dependencies]
 mopa = "0.2.0"
-num = "*"
+num = "0.1.29"

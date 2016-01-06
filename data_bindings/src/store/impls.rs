@@ -2,7 +2,7 @@ use std::collections::{
     HashMap
 };
 use std::slice;
-use std::marker::Reflect;
+use std::any::Any;
 use std::collections::hash_state::HashState;
 
 use lookup::{
@@ -109,7 +109,7 @@ impl<'a, T> Iterator for WrapperIterMut<'a, T>
 /// It works similarly to the impl above for `T` when `T: Into<StoreValue> + Cast`.
 /// The get_attribute transforms `&'a [T]` into a `StoreValue::List`
 impl<T> Store for Vec<T>
-    where T: Store + Reflect
+    where T: Store + Any
 {
     fn get_attribute<'a>(&'a self, k: PropertyAccessor) -> AttributeGetResult<'a> {
         match k.name() {
@@ -151,8 +151,8 @@ impl<T> Store for Vec<T>
 /// This implementation allows for property names such as `foo.bar`
 /// The rule follows the logic given by the `PrefixKeyIter` iterator.
 impl<S, T> Store for HashMap<String, T, S>
-    where S: HashState + Reflect + 'static,
-          T: Store
+      where S: HashState + Any + 'static,
+            T: Store
 {
 
     fn get_attribute<'a>(&'a self, k: PropertyAccessor) -> AttributeGetResult<'a> {

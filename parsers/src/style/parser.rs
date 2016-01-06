@@ -223,19 +223,16 @@ impl<'a, 'b, R, E, B> Parser<'a, 'b, R, E, B>
     }
 }
 
-static KEYWORDS: phf::Map<&'static str, KwValue> = phf_map! {
-    "auto" => KwValue::Auto,
-    "expand" => KwValue::Expand,
-    "absolute" => KwValue::Absolute,
-    "fit" => KwValue::Fit,
-    "repeat" => KwValue::Repeat
-};
+// Generated:
+//
+// static KEYWORDS: phf::Map<&'static str, KwValue> = phf_map! { ... };
+//
+// static KEYWORDS_SELECTOR_STATE: phf::Map<&'static str, SelectorState> = phf_map! { ... };
+//
+// with:
 
-static KEYWORDS_SELECTOR_STATE: phf::Map<&'static str, SelectorState> = phf_map! {
-    "focus" => SelectorState::Focus,
-    "hover" => SelectorState::Hover,
-    "creation" => SelectorState::Creation,
-};
+include!(concat!(env!("OUT_DIR"), "/keyword_style_parser_phf_generated.rs"));
+
 
 fn convert_to_style_value<R>(ctor: &Constructor, resource_manager: &mut R)
     -> Option<Value>

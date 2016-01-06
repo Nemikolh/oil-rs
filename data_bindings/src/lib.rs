@@ -1,5 +1,4 @@
 #![feature(hashmap_hasher)]
-#![feature(reflect_marker)]
 #![feature(test)]
 extern crate test as bench;
 

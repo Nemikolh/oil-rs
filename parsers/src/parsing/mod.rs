@@ -5,3 +5,4 @@ pub use self::error::Error;
 
 mod bufferconsumer;
 mod error;
+mod util;
