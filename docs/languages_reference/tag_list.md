@@ -65,7 +65,7 @@ be interpreted differently.
  - `value` represent the editable content of the input. This **has** to be a
     data binding. If not, then the tag will be ignored and a warning will be emited.
  - `key` represent the KeyCode that will trigger the user event `UserEvent::Submit`.
-    By default, this is the enter key. A data binding is valid here.
+    By default, this is the enter key. A data binding can be used here.
 
 #### progress-bar
 

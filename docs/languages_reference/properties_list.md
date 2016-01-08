@@ -4,7 +4,7 @@ Properties can hold different kind of values:
 
  * Length is a number followed by a unit such as `40px`.
  * Reserved keywords such as `auto`, `expand`, `fit` and `repeat`.
- * A dep declared by the dependency description language such as `$btn.img`.
+ * A **dep** declared by the dependency description language such as `$btn.img`.
 
 Here is the full list of valid properties:
 
