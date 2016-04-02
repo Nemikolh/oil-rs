@@ -11,13 +11,15 @@ description = "Parsers for oil."
 build = "build.rs"
 
 [dependencies]
-xml-rs = "0.3.0"
 phf = "0.7.12"
 num = "0.1.30"
+unicode-xid = "0.0.2"
+lalrpop-util = "0.11.0"
 
 [build-dependencies]
 phf_codegen = "0.7.12"
+lalrpop = { path = "../../lalrpop/lalrpop/" }
 
-[dependencies.oil_shared]
-path = "../shared"
-version = "=0.2.0"
+# [dependencies.oil_shared]
+# path = "../shared"
+# version = "=0.2.0"

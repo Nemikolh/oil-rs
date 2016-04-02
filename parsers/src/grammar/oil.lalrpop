@@ -1,0 +1,144 @@
+use std::str::FromStr;
+
+grammar;
+
+pub ui_package: () = {
+    import* template_or_style_or_view* => (),
+};
+
+import: () = {
+    "import" img_or_font "from" r"[']" path_ext r"[']" ";" => (),
+    "import" components "from" r"[']" path r"[']" ";" => (),
+    "import" r"[']" path r"[']" ";" => (),
+};
+
+components: () = {
+    "*" => (),
+    "{" (component ",")* component? "}" => (),
+};
+
+component: () = ident => ();
+
+template_or_style_or_view: () = {
+    template,
+    style,
+    view,
+};
+
+// FIXME: Will be done at the token level
+path: () = {
+    "./" ident => (),
+    ident => (),
+};
+
+img_or_font: () = {
+    "$img" => (),
+    "$font" => (),
+};
+
+path_ext: () = {
+    "./" ident "." ext => (),
+    ident "." ext => (),
+};
+
+ext: () = {
+    "png" => (),
+    "otf" => (),
+};
+
+ident: () = <r"[a-zA-Z_\\-][0-9a-zA-Z_\\-]*">
+    => ();
+
+//number: f32 = <r"[-+]?([0-9]*[\.])?[0-9]*(e[-+][0-9][0-9])?">
+//    => f32::from_str(<>).unwrap();
+
+// =================================
+//          Templates
+//
+
+template: () = {
+    export? "template" ident template_args? trigg_events? "=" node => (),
+};
+
+export: () = "export" => ();
+
+template_args: () = {
+    template_arg,
+    "[" (template_arg ",")* template_arg? "]" => (),
+};
+
+template_arg: () = ident => ();
+
+trigg_events: () = {
+    "->" events => (),
+};
+
+events: () = {
+    event,
+    "(" (event ",")* event? ")" => (),
+};
+
+event: () = ident => ();
+
+node: () = {
+    "<" ident class? node_args? node_events? ">" node* "</" ident ">" => (),
+};
+
+class: () = "class" property_value => ();
+
+node_args: () = {
+    "[" ident "]" node_value => (),
+};
+
+node_events: () = {
+    "(" ident ")" node_value => (),
+};
+
+node_value: () = {
+    "=" "\"" ident "\"" => (),
+    property_value => (),
+};
+
+property_value: () = {
+    "=" "{" property "}" => (),
+};
+
+property: () = {
+    ident => (),
+    ident "." property => (),
+};
+
+// =================================
+//          Styles
+//
+
+style: () = {
+    export? "." ident "{" style_properties* "}" => (),
+};
+
+style_properties: () = {
+    "background-image" ":" "$img" => (),
+    "font" ":" "$font" => (),
+    ident ":" style_value => (),
+};
+
+style_value: () = {
+    "{" ident "}" => (),
+    r"[0-9]+" style_unit ";" => (),
+};
+
+style_unit: () = {
+    "px" => (),
+};
+
+// =================================
+//          View
+//
+
+view: () = {
+    "view" ident "!" view_args "=" "{" node* "}" => (),
+};
+
+view_args: () = {
+    "(" ident "," ident ")" => (),
+};

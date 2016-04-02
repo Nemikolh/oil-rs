@@ -1,4 +1,5 @@
 extern crate phf_codegen;
+extern crate lalrpop;
 
 use std::env;
 use std::fs::File;
@@ -6,6 +7,11 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 fn main() {
+
+    // Lalrpop processing
+    lalrpop::process_root().unwrap();
+
+    // Phf processing
     let path = Path::new(&env::var("OUT_DIR").unwrap()).join("keyword_style_parser_phf_generated.rs");
     let mut file = BufWriter::new(File::create(&path).unwrap());
 
