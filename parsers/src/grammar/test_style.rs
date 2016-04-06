@@ -1,4 +1,4 @@
-use super::oil::{parse_ui_package};
+use super::parse_grammar;
 
 
 #[test]
@@ -7,7 +7,7 @@ fn test_oil_style_class_def() {
     .some-class {
     }
     "#;
-    parse_ui_package(style).unwrap();
+    parse_grammar(style).unwrap();
 }
 
 #[test]
@@ -20,7 +20,7 @@ fn test_oil_style_properties() {
         font: $font
     }
     "#;
-    parse_ui_package(style).unwrap();
+    parse_grammar(style).unwrap();
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn test_oil_style_incorrect_class_def1() {
     . some-class {
     }
     "#;
-    parse_ui_package(style).unwrap();
+    parse_grammar(style).unwrap();
 }
 
 #[test]
@@ -40,5 +40,5 @@ fn test_oil_style_incorrect_class_def2() {
     .$img {
     }
     "#;
-    parse_ui_package(style).unwrap();
+    parse_grammar(style).unwrap();
 }

@@ -1,15 +1,16 @@
+use tok::{self, Tok};
 use std::str::FromStr;
 
-grammar;
+grammar<'input>;
 
 pub ui_package: () = {
     import* template_or_style_or_view* => (),
 };
 
 import: () = {
-    "import" img_or_font "from" r"[']" path_ext r"[']" ";" => (),
-    "import" components "from" r"[']" path r"[']" ";" => (),
-    "import" r"[']" path r"[']" ";" => (),
+    "import" img_or_font "from" path ";" => (),
+    "import" components "from" path ";" => (),
+    "import" path ";" => (),
 };
 
 components: () = {
@@ -25,10 +26,8 @@ template_or_style_or_view: () = {
     view,
 };
 
-// FIXME: Will be done at the token level
 path: () = {
-    "./" ident => (),
-    ident => (),
+    "StringLiteral" => (),
 };
 
 img_or_font: () = {
@@ -36,18 +35,9 @@ img_or_font: () = {
     "$font" => (),
 };
 
-path_ext: () = {
-    "./" ident "." ext => (),
-    ident "." ext => (),
-};
-
-ext: () = {
-    "png" => (),
-    "otf" => (),
-};
-
-ident: () = <r"[a-zA-Z_\\-][0-9a-zA-Z_\\-]*">
-    => ();
+ident: () = "Id" => ();
+// ident: () = <r"[a-zA-Z_\\-][0-9a-zA-Z_\\-]*">
+//     => ();
 
 //number: f32 = <r"[-+]?([0-9]*[\.])?[0-9]*(e[-+][0-9][0-9])?">
 //    => f32::from_str(<>).unwrap();
@@ -57,7 +47,7 @@ ident: () = <r"[a-zA-Z_\\-][0-9a-zA-Z_\\-]*">
 //
 
 template: () = {
-    export? "template" ident template_args? trigg_events? "=" node => (),
+    export? "template" ident template_args? trigg_events? "=" node ";" => (),
 };
 
 export: () = "export" => ();
@@ -81,10 +71,10 @@ events: () = {
 event: () = ident => ();
 
 node: () = {
-    "<" ident class? node_args? node_events? ">" node* "</" ident ">" => (),
+    "<" ident class? node_args* node_events* ">" node* "</" ident ">" => (),
 };
 
-class: () = "class" property_value => ();
+class: () = ident property_value => ();
 
 node_args: () = {
     "[" ident "]" node_value => (),
@@ -95,7 +85,7 @@ node_events: () = {
 };
 
 node_value: () = {
-    "=" "\"" ident "\"" => (),
+    "=" "StringLiteral" => (),
     property_value => (),
 };
 
@@ -105,7 +95,7 @@ property_value: () = {
 
 property: () = {
     ident => (),
-    ident "." property => (),
+    property "DotId" => (),
 };
 
 // =================================
@@ -113,7 +103,7 @@ property: () = {
 //
 
 style: () = {
-    export? "." ident "{" style_properties* "}" => (),
+    export? "DotId" "{" style_properties* "}" => (),
 };
 
 style_properties: () = {
@@ -124,11 +114,7 @@ style_properties: () = {
 
 style_value: () = {
     "{" ident "}" => (),
-    r"[0-9]+" style_unit ";" => (),
-};
-
-style_unit: () = {
-    "px" => (),
+    "Number" "Id" ";" => (),
 };
 
 // =================================
@@ -136,9 +122,64 @@ style_unit: () = {
 //
 
 view: () = {
-    "view" ident "!" view_args "=" "{" node* "}" => (),
+    "view" "ViewId" view_args "=" "{" node* "}" => (),
 };
 
 view_args: () = {
     "(" ident "," ident ")" => (),
 };
+
+// =================================
+//          Tokens
+//
+extern {
+    type Location = usize;
+    type Error = tok::Error;
+    enum Tok<'input> {
+        "import" => Tok::Import,
+        "from" => Tok::From,
+        "view" => Tok::View,
+        "template" => Tok::Template,
+        "export" => Tok::Export,
+
+        "$img" => Tok::ImgSymbol,
+        "$font" => Tok::FontSymbol,
+
+        // Special keywords accompanied by a series of
+        // uninterpreted strings representing path
+        "StringLiteral" => Tok::StringLiteral(<&'input str>),
+        "Number" => Tok::Number(<&'input str>), // No unit
+
+        "TextNode" => Tok::TextNode(<&'input str>), // Includes binded properties
+
+        // Identifiers of various kinds:
+        "DotId" => Tok::DotId(<&'input str>), // excludes the '.'
+        "ViewId" => Tok::ViewId(<&'input str>), // excludes the '!'
+        "Id" => Tok::Id(<&'input str>),
+
+        // Special style properties
+        "background-image" => Tok::BackgroundImageProperty,
+        "font" => Tok::FontProperty,
+
+        "->" => Tok::Arrow,
+
+        "{" => Tok::LeftBrace,
+        "}" => Tok::RightBrace,
+        "[" => Tok::LeftBracket,
+        "]" => Tok::RightBracket,
+        "(" => Tok::LeftParen,
+        ")" => Tok::RightParen,
+        "<" => Tok::LessThan,
+        "</" => Tok::LessThanSlash,
+        ">" => Tok::GreaterThan,
+        //"#" => Tok::Hash,
+        //"?" => Tok::Question,
+        "=" => Tok::Equals,
+        "+" => Tok::Plus,
+        "-" => Tok::Minus,
+        ";" => Tok::Semi,
+        "*" => Tok::Star,
+        ":" => Tok::Colon,
+        "," => Tok::Comma,
+    }
+}

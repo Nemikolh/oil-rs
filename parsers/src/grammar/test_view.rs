@@ -1,4 +1,4 @@
-use super::oil::{parse_ui_package};
+use super::parse_grammar;
 
 
 #[test]
@@ -8,7 +8,7 @@ fn test_oil_view() {
         <app [name]={model.name} (start)={handlers.start}></app>
     }
     "#;
-    parse_ui_package(view).unwrap();
+    parse_grammar(view).unwrap();
 }
 
 #[test]
@@ -18,7 +18,7 @@ fn test_oil_view2() {
         <app [name]={m.name} (start)={h.start}></app>
     }
     "#;
-    parse_ui_package(view).unwrap();
+    parse_grammar(view).unwrap();
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn test_oil_invalid_view_missing_one_arg() {
     view my-view! (model)= {
     }
     "#;
-    parse_ui_package(view).unwrap();
+    parse_grammar(view).unwrap();
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn test_oil_invalid_view_missing_args() {
     view my-view! = {
     }
     "#;
-    parse_ui_package(view).unwrap();
+    parse_grammar(view).unwrap();
 }
 
 #[test]
@@ -47,5 +47,5 @@ fn test_oil_view_missing_bang() {
     let view = r#"
     view my-view (m, h) = {}
     "#;
-    parse_ui_package(view).unwrap();
+    parse_grammar(view).unwrap();
 }

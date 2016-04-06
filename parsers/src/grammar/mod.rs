@@ -24,7 +24,7 @@
 // mod tags;
 // mod lib;
 mod oil;
-//
+
 #[cfg(test)]
 mod test_mixed;
 #[cfg(test)]
@@ -35,6 +35,30 @@ mod test_style;
 mod test_template;
 #[cfg(test)]
 mod test_view;
+
+
+
+use lalrpop_util;
+use tok;
+
+pub type ParseError<'input> = lalrpop_util::ParseError<usize, tok::Tok<'input>, tok::Error>;
+
+
+pub fn parse_grammar<'input>(input: &'input str)
+                             -> Result<(), ParseError<'input>>
+{
+    let tokenizer = tok::Tokenizer::new(input, 0);
+    oil::parse_ui_package(tokenizer)
+    // let mut grammar = try!(oil::parse_ui_package(input, tokenizer));
+
+    // // find a unique prefix that does not appear anywhere in the input
+    // while input.contains(&grammar.prefix) {
+    //     grammar.prefix.push('_');
+    // }
+    //
+    // Ok(grammar)
+}
+
 //
 // /// Parse the given BufRead.
 // ///

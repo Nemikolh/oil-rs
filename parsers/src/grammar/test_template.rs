@@ -1,4 +1,4 @@
-use super::oil::{parse_ui_package};
+use super::parse_grammar;
 
 
 #[test]
@@ -7,7 +7,7 @@ fn test_oil_basic_template_no_args() {
     template ui-el =
         <el></el>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -16,7 +16,7 @@ fn test_oil_basic_template_no_args1() {
     template ui-el [] =
         <el></el>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -25,7 +25,7 @@ fn test_oil_basic_template_unused_arg() {
     template ui-el [a] =
         <el></el>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn test_oil_basic_template_no_args_export() {
     export template ui-el =
         <el></el>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn test_oil_basic_template_with_args() {
     template ui-el [el-class] =
         <el class={el-class}></el>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn test_oil_basic_template_with_args_export() {
     export template ui-el [el-class] =
         <el class={el-class}></el>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -61,7 +61,7 @@ fn test_oil_basic_template_with_args_return() {
     template ui-el [el-class] -> event =
         <el class={el-class} (click)={event}></el>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn test_oil_template_with_text_child() {
     export template ui-button [name] =
         <button>Hello {name}</button>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn test_oil_template_with_many_child() {
             <button class={btn-class}>Quit</button>
         </group>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -93,7 +93,7 @@ fn test_oil_template_static_attribute() {
     template ui-button =
         <button [gotoview]="foo"></button>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn test_oil_template_not_matching() {
     let template = r#"
     template john_doe = <button></btton>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -111,7 +111,7 @@ fn test_oil_template_not_matching2() {
     let template = r#"
     template john_doe = <button><button>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }
 
 #[test]
@@ -120,5 +120,5 @@ fn test_oil_template_wrong_nesting() {
     let template = r#"
     template john_doe = <button><group></button></group>
     "#;
-    parse_ui_package(template).unwrap();
+    parse_grammar(template).unwrap();
 }

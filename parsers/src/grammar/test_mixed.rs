@@ -1,4 +1,4 @@
-use super::oil::{parse_ui_package};
+use super::parse_grammar;
 
 
 #[test]
@@ -25,5 +25,5 @@ fn test_mixed_style_template() {
         <logo></logo>
       </d>
     "#;
-    parse_ui_package(view).unwrap();
+    parse_grammar(view).unwrap();
 }
