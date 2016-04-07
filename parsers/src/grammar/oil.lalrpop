@@ -8,7 +8,6 @@ pub ui_package: () = {
 };
 
 import: () = {
-    "import" img_or_font "from" path ";" => (),
     "import" components "from" path ";" => (),
     "import" path ";" => (),
 };
@@ -16,6 +15,7 @@ import: () = {
 components: () = {
     "*" => (),
     "{" (component ",")* component? "}" => (),
+    component => (), // Can only be $img or $font
 };
 
 component: () = ident => ();
@@ -28,11 +28,6 @@ template_or_style_or_view: () = {
 
 path: () = {
     "StringLiteral" => (),
-};
-
-img_or_font: () = {
-    "$img" => (),
-    "$font" => (),
 };
 
 ident: () = "Id" => ();
@@ -107,14 +102,15 @@ style: () = {
 };
 
 style_properties: () = {
-    "background-image" ":" "$img" => (),
-    "font" ":" "$font" => (),
+    // "background-image" ":" "$img" => (),
+    // "font" ":" "$font" => (),
     ident ":" style_value => (),
 };
 
 style_value: () = {
     "{" ident "}" => (),
     "Number" "Id" ";" => (),
+    ident ";" => (),
 };
 
 // =================================
@@ -142,9 +138,6 @@ extern {
         "template" => Tok::Template,
         "export" => Tok::Export,
 
-        "$img" => Tok::ImgSymbol,
-        "$font" => Tok::FontSymbol,
-
         // Special keywords accompanied by a series of
         // uninterpreted strings representing path
         "StringLiteral" => Tok::StringLiteral(<&'input str>),
@@ -156,10 +149,6 @@ extern {
         "DotId" => Tok::DotId(<&'input str>), // excludes the '.'
         "ViewId" => Tok::ViewId(<&'input str>), // excludes the '!'
         "Id" => Tok::Id(<&'input str>),
-
-        // Special style properties
-        "background-image" => Tok::BackgroundImageProperty,
-        "font" => Tok::FontProperty,
 
         "->" => Tok::Arrow,
 

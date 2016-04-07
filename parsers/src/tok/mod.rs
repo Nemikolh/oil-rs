@@ -15,7 +15,7 @@ pub enum ErrorCode {
     UnrecognizedToken,
     UnterminatedEscape,
     UnterminatedStringLiteral,
-    ExpectedStringLiteral,
+    // ExpectedStringLiteral,
 }
 
 fn error<T>(c: ErrorCode, l: usize) -> Result<T,Error> {
@@ -31,15 +31,10 @@ pub enum Tok<'input> {
     Template,
     Export,
 
-    ImgSymbol,
-    FontSymbol,
-
     // Special keywords: these are accompanied by a series of
     // uninterpreted strings representing imports and stuff.
     StringLiteral(&'input str),
-    PropertyAccess(&'input str),
     Number(&'input str), // No unit
-    UnitLiteral(&'input str),
 
     TextNode(&'input str),
 
@@ -47,10 +42,6 @@ pub enum Tok<'input> {
     DotId(&'input str), // excludes the '.'
     ViewId(&'input str), // excludes the '!'
     Id(&'input str),
-
-    // Special style properties
-    BackgroundImageProperty,
-    FontProperty,
 
     // Symbols:
     Arrow,
@@ -95,9 +86,6 @@ const KEYWORDS: &'static [(&'static str, Tok<'static>)] = &[
     ("from", From),
     ("view", View),
     ("template", Template),
-    // TODO: Remove those and complexify the state
-    ("$img", ImgSymbol),
-    ("$font", FontSymbol),
     ];
 
 impl<'input> Tokenizer<'input> {
@@ -123,24 +111,19 @@ impl<'input> Tokenizer<'input> {
                             self.bump();
                             Some(Ok((idx0, Arrow, idx1+1)))
                         }
-                        Some((idx1, d)) if is_digit(d) => {
+                        Some((idx1, d)) if d.is_digit(10) => {
                             Some(self.number(idx0))
                         }
                         _ => {
-                            Some(error(UnrecognizedToken, idx0))
+                            Some(Ok((idx0, Minus, idx0+1)))
                         }
                     }
                 }
                 Some((idx0, '$')) => {
+                    // TODO: merge this with identifier branch.
                     self.bump();
-                    let (start, word, end) = self.word(idx0);
-                    if word == "font" {
-                        Some(Ok((idx0, FontSymbol, end)))
-                    } else if word == "img" {
-                        Some(Ok((idx0, ImgSymbol, end)))
-                    } else {
-                        Some(Ok((idx0, Id(&self.text[idx0..end]), end)))
-                    }
+                    let (_, word, end) = self.word(idx0);
+                    Some(Ok((idx0, Id(word), end)))
                 }
                 Some((idx0, '<')) => {
                     if self.in_template {
@@ -156,7 +139,7 @@ impl<'input> Tokenizer<'input> {
                         }
                     }
                 }
-                Some((idx0, d)) if is_digit(d) => {
+                Some((idx0, d)) if d.is_digit(10) => {
                     Some(self.number(idx0))
                 }
                 Some((idx0, ':')) => {
@@ -197,7 +180,7 @@ impl<'input> Tokenizer<'input> {
                 }
                 Some((idx0, '+')) => {
                     match self.bump() {
-                        Some((idx1, d)) if is_digit(d) => {
+                        Some((idx1, d)) if d.is_digit(10) => {
                             Some(self.number(idx0))
                         }
                         _ => Some(Ok((idx0, Plus, idx0+1)))
@@ -224,9 +207,9 @@ impl<'input> Tokenizer<'input> {
                     self.bump();
                     Some(Ok((idx0, Star, idx0+1)))
                 }
-                Some((idx0, '"')) => {
+                Some((idx0, c)) if c == '"' || c == '\'' => {
                     self.bump();
-                    Some(self.string_literal(idx0))
+                    Some(self.string_literal(idx0, c))
                 }
                 Some((idx0, '/')) => {
                     match self.bump() {
@@ -345,7 +328,7 @@ impl<'input> Tokenizer<'input> {
     //     }
     // }
 
-    fn string_literal(&mut self, idx0: usize) -> Result<Spanned<Tok<'input>>, Error> {
+    fn string_literal(&mut self, idx0: usize, match_against: char) -> Result<Spanned<Tok<'input>>, Error> {
         let mut escape = false;
         let terminate = |c: char| {
             if escape {
@@ -354,7 +337,7 @@ impl<'input> Tokenizer<'input> {
             } else if c == '\\' {
                 escape = true;
                 false
-            } else if c == '"' {
+            } else if c == match_against {
                 true
             } else {
                 false
@@ -453,6 +436,7 @@ impl<'input> Tokenizer<'input> {
         // Note: The text might start with '-' or '+'
         //       Ideally we want to accept floating point
         //       value as well.
+        unimplemented!()
     }
 
     fn take_while<F>(&mut self, mut keep_going: F) -> Option<usize>
@@ -500,10 +484,7 @@ fn is_identifier_start(c: char) -> bool {
     UnicodeXID::is_xid_start(c)
 }
 
-fn is_digit(c: char) -> bool {
-    c >= '0' || c <= '9'
-}
-
 fn is_identifier_continue(c: char) -> bool {
-    UnicodeXID::is_xid_continue(c)
+    // TODO: Is the last check necessary?
+    UnicodeXID::is_xid_continue(c) || c == '-'
 }
