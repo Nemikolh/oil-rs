@@ -1,8 +1,16 @@
 use std::str::CharIndices;
+use std::slice;
+use std::str;
+use std::cmp::{min, max};
+use std::ops::Deref;
+use std::marker::PhantomData;
 use unicode_xid::UnicodeXID;
 
 use self::ErrorCode::*;
 use self::Tok::*;
+
+#[cfg(test)]
+mod test;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Error {
@@ -15,11 +23,62 @@ pub enum ErrorCode {
     UnrecognizedToken,
     UnterminatedTextNode,
     UnterminatedStringLiteral,
+    OnlyFontOrImg,
+    UnmatchingTag,
 }
 
 fn error<T>(c: ErrorCode, l: usize) -> Result<T,Error> {
     Err(Error { location: l, code: c })
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StrView<'input> {
+    ptr: *const u8,
+    begin_at: usize,
+    finish_at: usize,
+    phantom: PhantomData<&'input str>
+}
+
+impl<'input> StrView<'input> {
+    fn from(text: &'input str, start: usize, end: usize) -> StrView<'input> {
+        assert!(start < text.len());
+        assert!(end <= text.len());
+        StrView {
+            ptr: text.as_ptr(),
+            begin_at: start,
+            finish_at: end,
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn merge(&self, other: StrView<'input>) -> StrView<'input> {
+        assert_eq!(self.ptr, other.ptr);
+        StrView {
+            ptr: self.ptr,
+            begin_at: min(self.begin_at, other.begin_at),
+            finish_at: max(self.finish_at, other.finish_at),
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn as_str(&self) -> &'input str {
+        unsafe {
+            let len = self.finish_at - self.begin_at;
+            let ptr = self.ptr.offset(self.begin_at as isize);
+            let slice = slice::from_raw_parts(ptr, len);
+            // TODO: Use 'str::from_utf8_unchecked' instead
+            str::from_utf8(slice).unwrap()
+        }
+    }
+}
+
+impl<'input> Deref for StrView<'input> {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Tok<'input> {
@@ -39,8 +98,8 @@ pub enum Tok<'input> {
     TextNode(&'input str),
 
     // Identifiers of various kinds:
-    DotId(&'input str), // excludes the '.'
-    Id(&'input str),
+    DotId(StrView<'input>), // excludes the '.'
+    Id(StrView<'input>),
 
     // Symbols:
     Arrow,
@@ -78,12 +137,6 @@ enum TokState {
     InTemplateOrView,
     InTag,
     InBrace,
-}
-
-macro_rules! eof {
-    ($x:expr) => {
-        match $x { Some(v) => v, None => { return None; } }
-    }
 }
 
 pub type Spanned<T> = (usize, T, usize);
@@ -247,8 +300,8 @@ impl<'input> Tokenizer<'input> {
                 Some((idx0, '$')) if self.not_text() => {
                     // TODO: merge this with identifier branch.
                     self.bump();
-                    let (_, word, end) = self.word(idx0);
-                    Some(Ok((idx0, Id(word), end)))
+                    let (_, _, end) = self.word(idx0);
+                    Some(Ok((idx0, Id(StrView::from(self.text, idx0, end)), end)))
                 }
                 Some((idx0, ':')) if self.not_text() => {
                     self.bump();
@@ -260,8 +313,8 @@ impl<'input> Tokenizer<'input> {
                 }
                 Some((idx0, '.')) if self.not_text() => {
                     self.bump();
-                    let (start, word, end) = self.word(idx0);
-                    Some(Ok((start, DotId(word), end)))
+                    let (start, _, end) = self.word(idx0);
+                    Some(Ok((start, DotId(StrView::from(self.text, start, end)), end)))
                 }
                 Some((idx0, '=')) if self.not_text() => {
                     self.go_in_template();
@@ -365,7 +418,7 @@ impl<'input> Tokenizer<'input> {
                     .filter(|&&(w, _)| w == word)
                     .map(|&(_, ref t)| t.clone())
                     .next()
-                    .unwrap_or_else(|| Id(word));
+                    .unwrap_or_else(|| Id(StrView::from(self.text, start, end)));
 
         if tok == Template || tok == View {
             self.state = TokState::WaitingForEq;

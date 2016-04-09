@@ -7,4 +7,6 @@ extern crate lalrpop_util;
 // extern crate oil_shared;
 
 pub mod grammar;
+pub mod ast;
+
 mod tok;

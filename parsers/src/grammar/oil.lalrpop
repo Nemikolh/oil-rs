@@ -1,88 +1,171 @@
 use tok::{self, Tok};
 use std::str::FromStr;
+use ast::*;
+use lalrpop_util::ParseError;
 
 grammar<'input>;
 
-pub ui_package: () = {
-    import* template_or_style_or_view* => (),
-};
-
-import: () = {
-    "import" components "from" path ";" => {
-
-    },
-    "import" path ";" => {
-
+pub ui_package: Package = {
+    <vi:import*> <items:template_or_style_or_view*> => {
+        Package {
+            imports: vi,
+            items: items,
+        }
     },
 };
 
-components: () = {
-    "*" => (),
-    "{" (ident ",")* ident? "}" => (),
-    <font_or_img:ident> => {
-        assert!(font_or_img == "$font" || font_or_img == "$img")
+import: Import = {
+    "import" <c:components> "from" <p:path> ";" => {
+        Import {
+            components: c,
+            path: p.to_string(),
+        }
+    },
+    "import" <p:path> ";" => {
+        Import {
+            components: Components::All,
+            path: p.to_string(),
+        }
     },
 };
 
-template_or_style_or_view: () = {
-    template,
-    style,
-    view,
+components: Components = {
+    "*" => Components::All,
+    "{" <v:comma<ident>> "}" => {
+        Components::Only(v.into_iter().map(|s| s.to_string()).collect())
+    },
+    <lo:@L> <font_or_img:ident> =>? {
+        if font_or_img == "$font" {
+            Ok(Components::Font)
+        } else if font_or_img == "$img" {
+            Ok(Components::Img)
+        } else {
+            Err(ParseError::User {
+                error: tok::Error {
+                    location: lo,
+                    code: tok::ErrorCode::OnlyFontOrImg
+                }
+            })
+        }
+    },
+};
+
+template_or_style_or_view: Item = {
+    <t:template> => Item::Template(t),
+    style => Item::Class,
+    view => Item::View,
 };
 
 path: &'input str = {
     "StringLiteral",
 };
 
-ident: &'input str = "Id";
+//ident: tok::StrView<'input> = "Id";
+ident: &'input str = <s:"Id"> => s.as_str();
+
+property: tok::StrView<'input> = {
+    "Id",
+    <p:property> <d:"DotId"> => p.merge(d),
+};
 
 // =================================
 //          Templates
 //
 
-template: () = {
-    export? "template" ident template_args? trigg_events? "=" node* ";" => (),
+template: Template = {
+    <ex:export?> "template" <n:ident>
+    <args:template_args?> <events:trigg_events?> "=" <ns:node*> ";" => {
+        Template {
+            exported: ex.is_some(),
+            name: n.to_string(),
+            arguments: args.unwrap_or(vec![]),
+            events: events.unwrap_or(vec![]),
+            nodes: ns,
+        }
+    },
 };
 
 export: () = "export" => ();
 
-template_args: () = {
-    template_arg,
-    "[" (template_arg ",")* template_arg? "]" => (),
+template_args: Vec<String> = {
+    <arg:ident> => vec![arg.to_string()],
+    "[" <args:comma<ident>> "]" =>
+        args.into_iter().map(|s| s.to_string()).collect(),
 };
 
-template_arg: () = ident => ();
-
-trigg_events: () = {
-    "->" events => (),
+trigg_events: Vec<String> = {
+    "->" <evs:events> => evs,
 };
 
-events: () = {
-    event,
-    "(" (event ",")* event? ")" => (),
+events: Vec<String> = {
+    <ev:ident> => vec![ev.to_string()],
+    "(" <evs:comma<ident>> ")" =>
+        evs.into_iter().map(|s| s.to_string()).collect(),
 };
 
-event: () = ident => ();
-
-node: () = {
+node: Node = {
     // Some tag
-    "<" <tag_open:ident> class? node_args* node_events* ">" node*
-    "</" <tag_close:ident> ">" => {
-        assert_eq!(tag_open, tag_close)
+    "<" <lo:@L> <tag_open:ident> <hi:@R> <cl:class?> <args:node_args*> <ev:node_events*> ">" node*
+    "</" <errlo:@L> <tag_close:ident> ">" =>? {
+        if tag_open == tag_close {
+            Ok(Node {
+                span: Span(lo, hi),
+                kind: NodeKind::Tag {
+                    class: cl,
+                    arguments: args,
+                    events: ev,
+                },
+            })
+        } else {
+            Err(ParseError::User {
+                error: tok::Error {
+                    location: errlo,
+                    code: tok::ErrorCode::UnmatchingTag,
+                }
+            })
+        }
     },
     // Selection
-    "<" <select:ident> ":" <query:ident> "/>" => {
-        assert_eq!(select, "select");
-        assert_eq!(query, "children")
+    "<" <selo:@L> <select:ident> ":" <qulo:@L> <query:ident> <hi:@R> "/>" =>? {
+        if select == "select" {
+            if query == "children" {
+                Ok(Node {
+                    span: Span(selo, hi),
+                    kind: NodeKind::Query {
+                        kind: QueryKind::Children
+                    }
+                })
+            } else {
+                Err(ParseError::User {
+                    error: tok::Error {
+                        location: qulo,
+                        code: tok::ErrorCode::UnmatchingTag,
+                    }
+                })
+            }
+        } else {
+            Err(ParseError::User {
+                error: tok::Error {
+                    location: selo,
+                    code: tok::ErrorCode::UnmatchingTag,
+                }
+            })
+        }
     },
-    node_text => (),
+    node_text,
 };
 
-node_text: () = {
+node_text: Node = {
     // Text Node (pure text)
-    "TextNode" => (),
+    <lo:@L> <t:"TextNode"> <hi:@R> => Node {
+        span: Span(lo, hi),
+        kind: NodeKind::Text { content: t.to_string() },
+    },
     // A text binding
-    "{" property "}" => (),
+    <lo:@L> "{" <p:property> "}" <hi:@R> => Node {
+        span: Span(lo, hi),
+        kind: NodeKind::Binding { property: p.to_string() },
+    },
 };
 
 class: () = ident property_value => ();
@@ -102,11 +185,6 @@ node_value: () = {
 
 property_value: () = {
     "=" "{" property "}" => (),
-};
-
-property: () = {
-    ident => (),
-    property "DotId" => (),
 };
 
 // =================================
@@ -140,7 +218,7 @@ style_value: () = {
 };
 
 img_props: () = {
-    "[" (img_prop ",")* img_prop? "]" => (),
+    "[" comma<img_prop> "]" => (),
 };
 
 img_prop: () = {
@@ -159,6 +237,14 @@ view: () = {
 view_args: () = {
     "(" ident "," ident ")" => (),
 };
+
+// =================================
+//          Macros
+//
+
+comma<T>: Vec<T> =
+    <v:(<T> ",")*> <o:T?> =>
+        v.into_iter().chain(o).collect();
 
 // =================================
 //          Tokens
@@ -182,8 +268,8 @@ extern {
         "TextNode" => Tok::TextNode(<&'input str>), // Includes binded properties
 
         // Identifiers of various kinds:
-        "DotId" => Tok::DotId(<&'input str>), // excludes the '.'
-        "Id" => Tok::Id(<&'input str>),
+        "DotId" => Tok::DotId(<tok::StrView<'input>>), // excludes the '.'
+        "Id" => Tok::Id(<tok::StrView<'input>>),
 
         "->" => Tok::Arrow,
 
