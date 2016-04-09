@@ -49,7 +49,7 @@ the one understood by oil such as:
 * `progress-bar`
 * `group`
 * `text-input`
-* `for` (previsouly named `repeat`)
+* `for` (previously named `repeat`)
 * [new] `if`
 * [new] `switch`
 
@@ -77,7 +77,7 @@ or as argument to another template but not as a template.
 
 ### Style properties.
 
-Checks that properties names and values are valid. 
+Checks that properties names and values are valid.
 
 ## Fifth pass: `transform`
 

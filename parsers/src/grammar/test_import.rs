@@ -38,22 +38,8 @@ fn test_oil_import_path2() {
 }
 
 #[test]
-#[should_panic]
-fn test_oil_invalid_import_path1() {
-    let import = r#"import '../.path/file1';"#;
-    parse_grammar(import).unwrap();
-}
-
-#[test]
 fn test_oil_import_image1() {
     let import = r#"import $img from './logo.png';"#;
-    parse_grammar(import).unwrap();
-}
-
-#[test]
-#[should_panic]
-fn test_oil_invalid_import_image1() {
-    let import = r#"import $img from './logo';"#;
     parse_grammar(import).unwrap();
 }
 
@@ -65,8 +51,8 @@ fn test_oil_invalid_import_image2() {
 }
 
 #[test]
-#[should_panic]
-fn test_oil_invalid_import_image3() {
+fn test_oil_valid_module_import_that_look_like_image_import() {
+    // Not recommended but should be valid.
     let import = r#"import {img} from './logo.png';"#;
     parse_grammar(import).unwrap();
 }
@@ -80,6 +66,6 @@ fn test_oil_import_font() {
 #[test]
 #[should_panic]
 fn test_oil_invalid_import_font2() {
-    let import = r#"import $font from 'material-oil';"#;
+    let import = r#"import font from 'material-oil';"#;
     parse_grammar(import).unwrap();
 }

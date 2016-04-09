@@ -13,9 +13,8 @@ pub struct Error {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ErrorCode {
     UnrecognizedToken,
-    UnterminatedEscape,
+    UnterminatedTextNode,
     UnterminatedStringLiteral,
-    // ExpectedStringLiteral,
 }
 
 fn error<T>(c: ErrorCode, l: usize) -> Result<T,Error> {
@@ -34,13 +33,13 @@ pub enum Tok<'input> {
     // Special keywords: these are accompanied by a series of
     // uninterpreted strings representing imports and stuff.
     StringLiteral(&'input str),
-    Number(&'input str), // No unit
+    Number(&'input str),
+    Hex(&'input str),
 
     TextNode(&'input str),
 
     // Identifiers of various kinds:
     DotId(&'input str), // excludes the '.'
-    ViewId(&'input str), // excludes the '!'
     Id(&'input str),
 
     // Symbols:
@@ -54,6 +53,7 @@ pub enum Tok<'input> {
     LessThan,
     LessThanSlash,
     GreaterThan,
+    SlashGreaterThan,
     Equals,
     Plus,
     Minus,
@@ -68,8 +68,16 @@ pub struct Tokenizer<'input> {
     chars: CharIndices<'input>,
     lookahead: Option<(usize, char)>,
     shift: usize,
-    in_template: bool,
-    in_tag: bool,
+    state: TokState,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum TokState {
+    Normal,
+    WaitingForEq,
+    InTemplateOrView,
+    InTag,
+    InBrace,
 }
 
 macro_rules! eof {
@@ -95,40 +103,66 @@ impl<'input> Tokenizer<'input> {
             chars: text.char_indices(),
             lookahead: None,
             shift: shift,
-            in_template: false,
-            in_tag: false,
+            state: TokState::Normal,
         };
         t.bump();
         t
     }
 
+    #[inline]
+    fn not_text(&self) -> bool {
+        self.state != TokState::InTemplateOrView
+    }
+
+    #[inline]
+    fn go_in_template(&mut self) {
+        if self.state == TokState::WaitingForEq {
+            self.state = TokState::InTemplateOrView;
+        }
+    }
+
+    #[inline]
+    fn go_out_of_tag(&mut self) {
+        if self.state == TokState::InTag {
+            self.state = TokState::InTemplateOrView;
+        }
+    }
+
+    #[inline]
+    fn go_in_tag(&mut self) {
+        if self.state == TokState::InTemplateOrView {
+            self.state = TokState::InTag;
+        }
+    }
+
+    #[inline]
+    fn go_in_brace(&mut self) {
+        if self.state == TokState::InTemplateOrView {
+            self.state = TokState::InBrace;
+        }
+    }
+
+    #[inline]
+    fn go_out_of_brace(&mut self) {
+        if self.state == TokState::InBrace {
+            self.state = TokState::InTemplateOrView;
+        }
+    }
+
+    #[inline]
+    fn go_out_of_template(&mut self) {
+        if self.state == TokState::InTemplateOrView {
+            self.state = TokState::Normal;
+        }
+    }
+
     fn next_unshifted(&mut self) -> Option<Result<Spanned<Tok<'input>>, Error>> {
         loop {
             return match self.lookahead {
-                Some((idx0, '-')) => {
-                    match self.bump() {
-                        Some((idx1, '>')) => {
-                            self.bump();
-                            Some(Ok((idx0, Arrow, idx1+1)))
-                        }
-                        Some((idx1, d)) if d.is_digit(10) => {
-                            Some(self.number(idx0))
-                        }
-                        _ => {
-                            Some(Ok((idx0, Minus, idx0+1)))
-                        }
-                    }
-                }
-                Some((idx0, '$')) => {
-                    // TODO: merge this with identifier branch.
-                    self.bump();
-                    let (_, word, end) = self.word(idx0);
-                    Some(Ok((idx0, Id(word), end)))
-                }
+                // ====================================================
+                //              Not ignored in text mode
                 Some((idx0, '<')) => {
-                    if self.in_template {
-                        self.in_tag = true;
-                    }
+                    self.go_in_tag();
                     match self.bump() {
                         Some((idx1, '/')) => {
                             self.bump();
@@ -139,116 +173,147 @@ impl<'input> Tokenizer<'input> {
                         }
                     }
                 }
-                Some((idx0, d)) if d.is_digit(10) => {
-                    Some(self.number(idx0))
-                }
-                Some((idx0, ':')) => {
-                    self.bump();
-                    Some(Ok((idx0, Colon, idx0+1)))
-                }
-                Some((idx0, ',')) => {
-                    self.bump();
-                    Some(Ok((idx0, Comma, idx0+1)))
-                }
-                Some((idx0, '.')) if !self.in_tag && !self.in_template => {
-                    self.bump();
-                    let (start, word, end) = self.word(idx0);
-                    Some(Ok((start, DotId(word), end)))
-                }
-                Some((idx0, '=')) => {
-                    self.bump();
-                    Some(Ok((idx0, Equals, idx0+1)))
-                }
                 Some((idx0, '>')) => {
-                    if self.in_template {
-                        self.in_tag = false;
-                    }
+                    self.go_out_of_tag();
                     self.bump();
                     Some(Ok((idx0, GreaterThan, idx0+1)))
                 }
                 Some((idx0, '{')) => {
+                    self.go_in_brace();
                     self.bump();
                     Some(Ok((idx0, LeftBrace, idx0+1)))
                 }
-                Some((idx0, '[')) => {
-                    self.bump();
-                    Some(Ok((idx0, LeftBracket, idx0+1)))
-                }
-                Some((idx0, '(')) => {
-                    self.bump();
-                    Some(Ok((idx0, LeftParen, idx0+1)))
-                }
-                Some((idx0, '+')) => {
-                    match self.bump() {
-                        Some((idx1, d)) if d.is_digit(10) => {
-                            Some(self.number(idx0))
-                        }
-                        _ => Some(Ok((idx0, Plus, idx0+1)))
-                    }
-                }
                 Some((idx0, '}')) => {
+                    self.go_out_of_brace();
                     self.bump();
                     Some(Ok((idx0, RightBrace, idx0+1)))
                 }
-                Some((idx0, ']')) => {
-                    self.bump();
-                    Some(Ok((idx0, RightBracket, idx0+1)))
-                }
-                Some((idx0, ')')) => {
-                    self.bump();
-                    Some(Ok((idx0, RightParen, idx0+1)))
-                }
                 Some((idx0, ';')) => {
-                    self.in_template = false;
+                    self.go_out_of_template();
                     self.bump();
                     Some(Ok((idx0, Semi, idx0+1)))
                 }
-                Some((idx0, '*')) => {
-                    self.bump();
-                    Some(Ok((idx0, Star, idx0+1)))
-                }
-                Some((idx0, c)) if c == '"' || c == '\'' => {
-                    self.bump();
-                    Some(self.string_literal(idx0, c))
-                }
+                // TODO: Can't be parsed as beginning of a TextNode..
                 Some((idx0, '/')) => {
                     match self.bump() {
                         Some((_, '/')) => {
                             self.take_until(|c| c == '\n');
                             continue;
                         }
+                        Some((idx1, '>')) => {
+                            self.bump();
+                            Some(Ok((idx0, SlashGreaterThan, idx1+1)))
+                        }
                         _ => {
                             Some(error(UnrecognizedToken, idx0))
                         }
                     }
                 }
-                Some((idx0, c)) if is_identifier_start(c) => {
+                // ====================================================
+                //              Ignored in text mode
+                Some((idx0, '-')) if self.not_text() => {
+                    match self.bump() {
+                        Some((idx1, '>')) => {
+                            self.bump();
+                            Some(Ok((idx0, Arrow, idx1+1)))
+                        }
+                        Some((_, d)) if d.is_digit(10) => {
+                            Some(self.number(idx0))
+                        }
+                        _ => {
+                            Some(Ok((idx0, Minus, idx0+1)))
+                        }
+                    }
+                }
+                Some((idx0, '+')) if self.not_text() => {
+                    match self.bump() {
+                        Some((_, d)) if d.is_digit(10) => {
+                            Some(self.number(idx0))
+                        }
+                        _ => Some(Ok((idx0, Plus, idx0+1)))
+                    }
+                }
+                Some((idx0, d)) if d.is_digit(10) && self.not_text() => {
+                    Some(self.number(idx0))
+                }
+                Some((_, '#')) if self.not_text() => {
+                    match self.bump() {
+                        Some((idx1, _)) => {
+                            Some(Ok(self.hexadecimal(idx1)))
+                        }
+                        None => None
+                    }
+                }
+                Some((idx0, '$')) if self.not_text() => {
+                    // TODO: merge this with identifier branch.
+                    self.bump();
+                    let (_, word, end) = self.word(idx0);
+                    Some(Ok((idx0, Id(word), end)))
+                }
+                Some((idx0, ':')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, Colon, idx0+1)))
+                }
+                Some((idx0, ',')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, Comma, idx0+1)))
+                }
+                Some((idx0, '.')) if self.not_text() => {
+                    self.bump();
+                    let (start, word, end) = self.word(idx0);
+                    Some(Ok((start, DotId(word), end)))
+                }
+                Some((idx0, '=')) if self.not_text() => {
+                    self.go_in_template();
+                    self.bump();
+                    Some(Ok((idx0, Equals, idx0+1)))
+                }
+                Some((idx0, '[')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, LeftBracket, idx0+1)))
+                }
+                Some((idx0, '(')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, LeftParen, idx0+1)))
+                }
+                Some((idx0, ']')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, RightBracket, idx0+1)))
+                }
+                Some((idx0, ')')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, RightParen, idx0+1)))
+                }
+                Some((idx0, '*')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, Star, idx0+1)))
+                }
+                Some((idx0, c)) if (c == '"' || c == '\'') && self.not_text() => {
+                    self.bump();
+                    Some(self.string_literal(idx0, c))
+                }
+                Some((idx0, c)) if is_identifier_start(c) && self.not_text() => {
                     Some(self.identifierish(idx0))
-                    // if c == 'r' {
-                    //     // watch out for r"..." or r#"..."# strings
-                    //     self.bump();
-                    //     match self.lookahead {
-                    //         Some((_, '#')) |
-                    //         Some((_, '"')) => {
-                    //             Some(self.regex_literal(idx0))
-                    //         }
-                    //         _ => {
-                    //             // due to the particulars of how identifierish works,
-                    //             // it's ok that we already consumed the 'r', because the
-                    //             // identifier will run from idx0 (the 'r') to the end
-                    //             Some(self.identifierish(idx0))
-                    //         }
-                    //     }
-                    // } else {
-                    //     Some(self.identifierish(idx0))
-                    // }
                 }
                 Some((_, c)) if c.is_whitespace() => {
                     self.bump();
                     continue;
                 }
-                Some((idx, _)) => {
-                    Some(error(UnrecognizedToken, idx))
+                Some((idx0, _)) => {
+                    if self.state == TokState::InTemplateOrView {
+                        return Some(match self.take_until(|c| c == ';' || c == '<' || c == '{') {
+                            Some(idx1) => {
+                                let text: &'input str = &self.text[idx0..idx1];
+                                Ok((idx0, TextNode(text), idx1+1))
+                            }
+                            None => {
+                                error(UnterminatedTextNode, idx0)
+                            }
+                        })
+                    }
+
+                    println!("Not matched!");
+                    Some(error(UnrecognizedToken, idx0))
                 }
                 None => {
                     None
@@ -261,72 +326,6 @@ impl<'input> Tokenizer<'input> {
         self.lookahead = self.chars.next();
         self.lookahead
     }
-
-    // fn code(&mut self, idx0: usize, open_delims: &str, close_delims: &str) -> Result<usize, Error> {
-    //     // This is the interesting case. To find the end of the code,
-    //     // we have to scan ahead, matching (), [], and {}, and looking
-    //     // for a suitable terminator: `,`, `;`, `]`, `}`, or `)`.
-    //     let mut balance = 0; // number of unclosed `(` etc
-    //     loop {
-    //         if let Some((idx, c)) = self.lookahead {
-    //             if c == '"' {
-    //                 self.bump();
-    //                 try!(self.string_literal(idx)); // discard the produced token
-    //                 continue;
-    //             } else if c == 'r' {
-    //                 self.bump();
-    //                 if let Some((idx, '#')) = self.lookahead {
-    //                     try!(self.regex_literal(idx));
-    //                 }
-    //                 continue;
-    //             } else if c == '/' {
-    //                 self.bump();
-    //                 if let Some((_, '/')) = self.lookahead {
-    //                     self.take_until(|c| c == '\n');
-    //                 }
-    //                 continue;
-    //             } else if open_delims.find(c).is_some() {
-    //                 balance += 1;
-    //             } else if balance > 0 {
-    //                 if close_delims.find(c).is_some() {
-    //                     balance -= 1;
-    //                 }
-    //             } else {
-    //                 debug_assert!(balance == 0);
-    //
-    //                 if c == ',' || c == ';' || close_delims.find(c).is_some() {
-    //                     // Note: we do not consume the
-    //                     // terminator. The code is everything *up
-    //                     // to but not including* the terminating
-    //                     // `,`, `;`, etc.
-    //                     return Ok(idx);
-    //                 }
-    //             }
-    //         } else if balance > 0 {
-    //             // the input should not end with an
-    //             // unbalanced number of `{` etc!
-    //             return error(UnterminatedCode, idx0);
-    //         } else {
-    //             debug_assert!(balance == 0);
-    //             return Ok(self.text.len());
-    //         }
-    //
-    //         self.bump();
-    //     }
-    // }
-
-    // fn escape(&mut self, idx0: usize) -> Result<Spanned<Tok<'input>>, Error> {
-    //     match self.take_until(|c| c == '`') {
-    //         Some(idx1) => {
-    //             self.bump(); // consume the '`'
-    //             let text: &'input str = &self.text[idx0+1..idx1]; // do not include the `` in the str
-    //             Ok((idx0, Escape(text), idx1+1))
-    //         }
-    //         None => {
-    //             error(UnterminatedEscape, idx0)
-    //         }
-    //     }
-    // }
 
     fn string_literal(&mut self, idx0: usize, match_against: char) -> Result<Spanned<Tok<'input>>, Error> {
         let mut escape = false;
@@ -357,68 +356,19 @@ impl<'input> Tokenizer<'input> {
 
     fn identifierish(&mut self, idx0: usize) -> Result<Spanned<Tok<'input>>, Error> {
 
-        if self.in_template && self.in_tag {
-            return match self.take_until(|c| c == ';' || c == '<') {
-                Some(idx1) => {
-                    self.bump(); // consume the ';' or '<'
-                    let text: &'input str = &self.text[idx0..idx1];
-                    Ok((idx0, TextNode(text), idx1+1))
-                }
-                None => {
-                    error(UnterminatedEscape, idx0)
-                }
-            }
-        }
-
         let (start, word, end) = self.word(idx0);
-        // if word == "use" {
-        //     let code_end = try!(self.code(idx0, "([{", "}])"));
-        //     let code = &self.text[end..code_end];
-        //     return Ok((start, Tok::Use(code), code_end));
-        // }
-        //
-        // if word == "where" {
-        //     let mut wcs = vec![];
-        //     let mut wc_start = end;
-        //     let mut wc_end;
-        //     loop {
-        //         // Note: do not include `{` as a delimeter here, as
-        //         // that is not legal in the trait/where-clause syntax,
-        //         // and in fact signals start of the fn body. But do
-        //         // include `<`.
-        //         wc_end = try!(self.code(wc_start, "([<", ">])"));
-        //         let wc = &self.text[wc_start..wc_end];
-        //         wcs.push(wc);
-        //
-        //         // if this ended in a comma, maybe expect another where-clause
-        //         if let Some((_, ',')) = self.lookahead {
-        //             self.bump();
-        //             wc_start = wc_end + 1;
-        //         } else {
-        //             break;
-        //         }
-        //     }
-        //
-        //     return Ok((start, Tok::Where(wcs), wc_end));
-        // }
 
         let tok =
             // search for a keyword first; if none are found, this is
-            // either a ViewId or a Id, depending on whether there
-            // is a `!` immediately afterwards
+            // an Id
             KEYWORDS.iter()
                     .filter(|&&(w, _)| w == word)
                     .map(|&(_, ref t)| t.clone())
                     .next()
-                    .unwrap_or_else(|| {
-                        match self.lookahead {
-                            Some((_, '!')) => ViewId(word),
-                            _ => Id(word),
-                        }
-                    });
+                    .unwrap_or_else(|| Id(word));
 
-        if tok == Template {
-            self.in_template = true;
+        if tok == Template || tok == View {
+            self.state = TokState::WaitingForEq;
         }
 
         Ok((start, tok, end))
@@ -431,12 +381,30 @@ impl<'input> Tokenizer<'input> {
         }
     }
 
+    fn hexadecimal(&mut self, idx0: usize) -> Spanned<Tok<'input>> {
+        match self.take_while(|c| c.is_digit(16)) {
+            Some(end) => (idx0, Hex(&self.text[idx0..end]), end),
+            None => (idx0, Hex(&self.text[idx0..]), self.text.len()),
+        }
+    }
+
     fn number(&mut self, idx0: usize) -> Result<Spanned<Tok<'input>>, Error> {
-        // TODO: consume digits
-        // Note: The text might start with '-' or '+'
-        //       Ideally we want to accept floating point
-        //       value as well.
-        unimplemented!()
+        let mut seen_dot = false;
+        let valid_number = |c: char| {
+            if c.is_digit(10) {
+                true
+            } else if c == '.' && !seen_dot {
+                seen_dot = true;
+                true
+            } else {
+                false
+            }
+        };
+        let res = match self.take_while(valid_number) {
+            Some(end) => (idx0, Number(&self.text[idx0..end]), end),
+            None => (idx0, Number(&self.text[idx0..]), self.text.len()),
+        };
+        Ok(res)
     }
 
     fn take_while<F>(&mut self, mut keep_going: F) -> Option<usize>
@@ -472,8 +440,10 @@ impl<'input> Iterator for Tokenizer<'input> {
         match self.next_unshifted() {
             None =>
                 None,
-            Some(Ok((l, t, r))) =>
-                Some(Ok((l+self.shift, t, r+self.shift))),
+            Some(Ok((l, t, r))) => {
+                println!("{:?}", t);
+                Some(Ok((l+self.shift, t, r+self.shift)))
+            }
             Some(Err(Error { location, code })) =>
                 Some(Err(Error { location: location+self.shift, code: code })),
         }

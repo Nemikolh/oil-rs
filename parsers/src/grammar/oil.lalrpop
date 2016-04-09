@@ -8,17 +8,21 @@ pub ui_package: () = {
 };
 
 import: () = {
-    "import" components "from" path ";" => (),
-    "import" path ";" => (),
+    "import" components "from" path ";" => {
+
+    },
+    "import" path ";" => {
+
+    },
 };
 
 components: () = {
     "*" => (),
-    "{" (component ",")* component? "}" => (),
-    component => (), // Can only be $img or $font
+    "{" (ident ",")* ident? "}" => (),
+    <font_or_img:ident> => {
+        assert!(font_or_img == "$font" || font_or_img == "$img")
+    },
 };
-
-component: () = ident => ();
 
 template_or_style_or_view: () = {
     template,
@@ -26,23 +30,18 @@ template_or_style_or_view: () = {
     view,
 };
 
-path: () = {
-    "StringLiteral" => (),
+path: &'input str = {
+    "StringLiteral",
 };
 
-ident: () = "Id" => ();
-// ident: () = <r"[a-zA-Z_\\-][0-9a-zA-Z_\\-]*">
-//     => ();
-
-//number: f32 = <r"[-+]?([0-9]*[\.])?[0-9]*(e[-+][0-9][0-9])?">
-//    => f32::from_str(<>).unwrap();
+ident: &'input str = "Id";
 
 // =================================
 //          Templates
 //
 
 template: () = {
-    export? "template" ident template_args? trigg_events? "=" node ";" => (),
+    export? "template" ident template_args? trigg_events? "=" node* ";" => (),
 };
 
 export: () = "export" => ();
@@ -66,7 +65,24 @@ events: () = {
 event: () = ident => ();
 
 node: () = {
-    "<" ident class? node_args* node_events* ">" node* "</" ident ">" => (),
+    // Some tag
+    "<" <tag_open:ident> class? node_args* node_events* ">" node*
+    "</" <tag_close:ident> ">" => {
+        assert_eq!(tag_open, tag_close)
+    },
+    // Selection
+    "<" <select:ident> ":" <query:ident> "/>" => {
+        assert_eq!(select, "select");
+        assert_eq!(query, "children")
+    },
+    node_text => (),
+};
+
+node_text: () = {
+    // Text Node (pure text)
+    "TextNode" => (),
+    // A text binding
+    "{" property "}" => (),
 };
 
 class: () = ident property_value => ();
@@ -109,8 +125,27 @@ style_properties: () = {
 
 style_value: () = {
     "{" ident "}" => (),
-    "Number" "Id" ";" => (),
-    ident ";" => (),
+    "Number" ident ";" => (),
+    "Hex" ";" => (),
+    <font_or_img:ident>  <prop:img_props?> ";" => {
+        match prop {
+            Some(_) => {
+                assert_eq!(font_or_img, "$img")
+            },
+            None => {
+                assert!(font_or_img == "$font" || font_or_img == "$img")
+            }
+        }
+    },
+};
+
+img_props: () = {
+    "[" (img_prop ",")* img_prop? "]" => (),
+};
+
+img_prop: () = {
+    ident ":" "Number" => (),
+    "Number" => (),
 };
 
 // =================================
@@ -118,7 +153,7 @@ style_value: () = {
 //
 
 view: () = {
-    "view" "ViewId" view_args "=" "{" node* "}" => (),
+    "view" "Id" view_args "=" node ";" => (),
 };
 
 view_args: () = {
@@ -141,13 +176,13 @@ extern {
         // Special keywords accompanied by a series of
         // uninterpreted strings representing path
         "StringLiteral" => Tok::StringLiteral(<&'input str>),
-        "Number" => Tok::Number(<&'input str>), // No unit
+        "Number" => Tok::Number(<&'input str>),
+        "Hex" => Tok::Hex(<&'input str>),
 
         "TextNode" => Tok::TextNode(<&'input str>), // Includes binded properties
 
         // Identifiers of various kinds:
         "DotId" => Tok::DotId(<&'input str>), // excludes the '.'
-        "ViewId" => Tok::ViewId(<&'input str>), // excludes the '!'
         "Id" => Tok::Id(<&'input str>),
 
         "->" => Tok::Arrow,
@@ -161,6 +196,7 @@ extern {
         "<" => Tok::LessThan,
         "</" => Tok::LessThanSlash,
         ">" => Tok::GreaterThan,
+        "/>" => Tok::SlashGreaterThan,
         //"#" => Tok::Hash,
         //"?" => Tok::Question,
         "=" => Tok::Equals,

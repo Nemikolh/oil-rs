@@ -264,6 +264,45 @@ Hello {name} !
 
 * As input to other parameters.
 
+#### Template children
+
+As you might expect, when using a template you can add
+children to it:
+
+```html
+<my-template>
+    Children here!
+</my-template>
+```
+
+This will be rejected if `my-template` does not specify
+where those children should go.
+
+Here is how you do:
+
+```jsx
+template my-template = <select:children />;
+```
+
+This will insert within `my-template` all children within
+it.
+
+We plan to support the following kind of insertion:
+
+| `<select:? />` | Effect                    |
+|----------------|---------------------------|
+| `children`     | Insert all children       |
+| `first`        | Insert the first children |
+| `last`         | Insert the last children  |
+
+
+> Note: Only `children` is supported for now. We need more
+>       experience before integrating other selection.
+
+
+> Question: Do we want to allow "queries" on the type of those
+>           children? Like filtering children that are TextNode, etc..
+
 ### Global templates
 
 Many templates are defined by oil and are internal to oil.
@@ -346,13 +385,13 @@ creation and management easier.
 Here is an example of how view looks like:
 
 ```js
-view game-menu!(model, handlers) {
+view game-menu(model, handlers) =
     <game-ui>
         Hello {model.name}!
         <ui-button (click)={handlers.play}>Play</ui-button>
         <ui-button (click)={handlers.quit}>Quit</ui-button>
     </game-ui>
-}
+;
 ```
 
 The `model` name is like the `this` from JavaScript
@@ -371,9 +410,9 @@ model.settings.window.width
 Last but not least, `view` are always defined as:
 
 ```js
-view <view-name>(<model-name>, <handlers-name>) {
+view <view-name>(<model-name>, <handlers-name>) =
     // ...
-}
+;
 ```
 
 where `view-name` is the name for the view, `model-name`

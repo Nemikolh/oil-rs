@@ -15,15 +15,17 @@ fn test_mixed_style_template() {
     }
 
     // This template is local to this class
-    template local-btn = <button class="local-class"><select:children /></button>
+    template local-btn = <button class={local-class}><select:children /></button>;
 
     // ui-element is exported and can be used elsewhere
     export template ui-element [name, progress] =
-      <local-btn>Hello {name}</local-btn>
-      <d>
-        <progress-bar value={progress}></progress-bar>
-        <logo></logo>
-      </d>
+      <group>
+        <local-btn>Hello {name}</local-btn>
+        <d>
+          <progress-bar value={progress}></progress-bar>
+          <logo></logo>
+        </d>
+      </group>;
     "#;
     parse_grammar(view).unwrap();
 }
