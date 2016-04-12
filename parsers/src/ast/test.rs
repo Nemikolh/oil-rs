@@ -32,3 +32,35 @@ fn test_ast_package_should_collect_all_import() {
     assert_eq!(package.imports[1].components, Components::All);
     assert_eq!(package.imports[2].components, Components::Font);
 }
+
+#[test]
+fn test_ast_template_with_text_child() {
+    let template = r#"template test = Hello!;"#;
+    let package = parse_grammar(template).unwrap();
+    assert_eq!(package.items.len(), 1);
+    if let Item::Template(ref template) = package.items[0] {
+        assert_eq!(template.exported, false);
+        assert_eq!(template.name, "test");
+        assert_eq!(template.arguments.len(), 0);
+        assert_eq!(template.events.len(), 0);
+        if let NodeKind::Text { ref content } = template.nodes[0].kind {
+            assert_eq!(content, "Hello!");
+        } else {
+            assert!(false);
+        }
+    } else {
+        assert!(false);
+    }
+}
+
+#[test]
+fn test_ast_style_should_have_name_without_dot() {
+    let class = r#".some-class {}"#;
+    let package = parse_grammar(class).unwrap();
+    assert_eq!(package.items.len(), 1);
+    if let Item::Class(ref class) = package.items[0] {
+        assert_eq!(class.name, "some-class");
+    } else {
+        assert!(false);
+    }
+}

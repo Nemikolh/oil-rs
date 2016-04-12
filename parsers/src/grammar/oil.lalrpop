@@ -2,6 +2,7 @@ use tok::{self, Tok};
 use std::str::FromStr;
 use ast::*;
 use lalrpop_util::ParseError;
+use std::collections::HashMap;
 
 grammar<'input>;
 
@@ -52,7 +53,7 @@ components: Components = {
 
 template_or_style_or_view: Item = {
     <t:template> => Item::Template(t),
-    style => Item::Class,
+    <c:style> => Item::Class(c),
     view => Item::View,
 };
 
@@ -60,7 +61,6 @@ path: &'input str = {
     "StringLiteral",
 };
 
-//ident: tok::StrView<'input> = "Id";
 ident: &'input str = <s:"Id"> => s.as_str();
 
 property: tok::StrView<'input> = {
@@ -191,27 +191,50 @@ property_value: () = {
 //          Styles
 //
 
-style: () = {
-    export? "DotId" "{" style_properties* "}" => (),
+style: Class = {
+    <ex:export?> <name:"DotId"> "{" <props:style_properties*> "}" => {
+        Class {
+            exported: ex.is_some(),
+            name: (&*name)[1..].to_string(),
+            properties: props.into_iter().collect(),
+        }
+    },
 };
 
-style_properties: () = {
-    // "background-image" ":" "$img" => (),
-    // "font" ":" "$font" => (),
-    ident ":" style_value => (),
+style_properties: (String, StyleProperty) = {
+    <i:ident> ":" <s:style_value> => (i.to_string(), s),
 };
 
-style_value: () = {
-    "{" ident "}" => (),
-    "Number" ident ";" => (),
-    "Hex" ";" => (),
+style_value: StyleProperty = {
+    // Shall we have this case?
+    // "{" ident "}" =>
+    <lo:@L> <n:"Number"> <li:@L> <u:ident> ";" =>? match f32::from_str(n) {
+        Ok(n) => match u {
+            "px" => Ok(StyleProperty::Number(n, Unit::Px)),
+            _ => Err(ParseError::User {
+                error: tok::Error {
+                    location: lo,
+                    code: tok::ErrorCode::InvalidUnit
+                }
+            })
+        },
+        _ => Err(ParseError::User {
+            error: tok::Error {
+                location: li,
+                code: tok::ErrorCode::InvalidNumber
+            }
+        })
+    },
+    <h:"Hex"> ";" => StyleProperty::Hex(h.to_string()),
     <font_or_img:ident>  <prop:img_props?> ";" => {
         match prop {
             Some(_) => {
-                assert_eq!(font_or_img, "$img")
+                assert_eq!(font_or_img, "$img");
+                StyleProperty::Font
             },
             None => {
-                assert!(font_or_img == "$font" || font_or_img == "$img")
+                assert!(font_or_img == "$font" || font_or_img == "$img");
+                StyleProperty::Font
             }
         }
     },

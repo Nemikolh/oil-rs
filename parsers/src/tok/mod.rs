@@ -4,6 +4,7 @@ use std::str;
 use std::cmp::{min, max};
 use std::ops::Deref;
 use std::marker::PhantomData;
+use std::fmt;
 use unicode_xid::UnicodeXID;
 
 use self::ErrorCode::*;
@@ -25,18 +26,26 @@ pub enum ErrorCode {
     UnterminatedStringLiteral,
     OnlyFontOrImg,
     UnmatchingTag,
+    InvalidNumber,
+    InvalidUnit,
 }
 
 fn error<T>(c: ErrorCode, l: usize) -> Result<T,Error> {
     Err(Error { location: l, code: c })
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct StrView<'input> {
     ptr: *const u8,
     begin_at: usize,
     finish_at: usize,
     phantom: PhantomData<&'input str>
+}
+
+impl<'input> fmt::Debug for StrView<'input> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
 }
 
 impl<'input> StrView<'input> {

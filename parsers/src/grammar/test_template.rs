@@ -141,6 +141,14 @@ fn test_oil_template_wrong_nesting() {
     parse_grammar(template).unwrap();
 }
 
+#[test]
+fn test_oil_template_no_keyword_in_template_or_view() {
+    { let template = r#"export template a01 = export;"#; parse_grammar(template).unwrap(); }
+    { let template = r#"export template a01 = import;"#; parse_grammar(template).unwrap(); }
+    { let template = r#"export template a01 = template;"#; parse_grammar(template).unwrap(); }
+    { let template = r#"export template a01 = view;"#; parse_grammar(template).unwrap(); }
+}
+
 // Weirdy cases
 #[test]
 fn test_oil_template_text_node_edge_cases() {
