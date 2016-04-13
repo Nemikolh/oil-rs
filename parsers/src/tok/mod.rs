@@ -26,8 +26,9 @@ pub enum ErrorCode {
     UnterminatedStringLiteral,
     OnlyFontOrImg,
     UnmatchingTag,
-    InvalidNumber,
     InvalidUnit,
+    InvalidQuery,
+    InvalidSelect,
 }
 
 fn error<T>(c: ErrorCode, l: usize) -> Result<T,Error> {

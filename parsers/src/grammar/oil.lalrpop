@@ -63,6 +63,8 @@ path: &'input str = {
 
 ident: &'input str = <s:"Id"> => s.as_str();
 
+number: f32 = <n:"Number"> => f32::from_str(n).unwrap();
+
 property: tok::StrView<'input> = {
     "Id",
     <p:property> <d:"DotId"> => p.merge(d),
@@ -139,7 +141,7 @@ node: Node = {
                 Err(ParseError::User {
                     error: tok::Error {
                         location: qulo,
-                        code: tok::ErrorCode::UnmatchingTag,
+                        code: tok::ErrorCode::InvalidQuery,
                     }
                 })
             }
@@ -147,7 +149,7 @@ node: Node = {
             Err(ParseError::User {
                 error: tok::Error {
                     location: selo,
-                    code: tok::ErrorCode::UnmatchingTag,
+                    code: tok::ErrorCode::InvalidSelect,
                 }
             })
         }
@@ -208,20 +210,12 @@ style_properties: (String, StyleProperty) = {
 style_value: StyleProperty = {
     // Shall we have this case?
     // "{" ident "}" =>
-    <lo:@L> <n:"Number"> <li:@L> <u:ident> ";" =>? match f32::from_str(n) {
-        Ok(n) => match u {
-            "px" => Ok(StyleProperty::Number(n, Unit::Px)),
-            _ => Err(ParseError::User {
-                error: tok::Error {
-                    location: lo,
-                    code: tok::ErrorCode::InvalidUnit
-                }
-            })
-        },
+    <n:number> <li:@L> <u:ident> ";" =>? match u {
+        "px" => Ok(StyleProperty::Number(n, Unit::Px)),
         _ => Err(ParseError::User {
             error: tok::Error {
                 location: li,
-                code: tok::ErrorCode::InvalidNumber
+                code: tok::ErrorCode::InvalidUnit
             }
         })
     },
@@ -229,6 +223,7 @@ style_value: StyleProperty = {
     <font_or_img:ident>  <prop:img_props?> ";" => {
         match prop {
             Some(_) => {
+                // TODO:
                 assert_eq!(font_or_img, "$img");
                 StyleProperty::Font
             },
@@ -240,13 +235,13 @@ style_value: StyleProperty = {
     },
 };
 
-img_props: () = {
-    "[" comma<img_prop> "]" => (),
+img_props: Vec<(Option<&'input str>, f32)> = {
+    "[" <v:comma<img_prop>> "]" => v,
 };
 
-img_prop: () = {
-    ident ":" "Number" => (),
-    "Number" => (),
+img_prop: (Option<&'input str>, f32) = {
+    <i:ident> ":" <n:number> => (Some(i), n),
+    <n:number> => (None, n),
 };
 
 // =================================

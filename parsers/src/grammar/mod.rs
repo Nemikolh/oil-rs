@@ -16,6 +16,8 @@ pub fn parse_grammar<'input>(input: &'input str)
 
 
 #[cfg(test)]
+mod test_errors;
+#[cfg(test)]
 mod test_mixed;
 #[cfg(test)]
 mod test_import;
