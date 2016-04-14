@@ -4,8 +4,8 @@ use super::parse_grammar;
 #[test]
 fn test_oil_view() {
     let view = r#"
-    view my-view(model, handlers) =
-        <app [name]={model.name} (start)={handlers.start}></app>
+    view my_view(model, handlers) =
+        <app [name]=model.name (start)=handlers.start></app>
     ;
     "#;
     parse_grammar(view).unwrap();
@@ -14,8 +14,8 @@ fn test_oil_view() {
 #[test]
 fn test_oil_view2() {
     let view = r#"
-    view my-view (m, h) =
-        <app [name]={m.name} (start)={h.start}></app>
+    view my_view (m, h) =
+        <app [name]=m.name (start)=h.start></app>
     ;
     "#;
     parse_grammar(view).unwrap();
@@ -25,7 +25,7 @@ fn test_oil_view2() {
 #[should_panic]
 fn test_oil_invalid_view_missing_one_arg() {
     let view = r#"
-    view my-view (model)= ;
+    view my_view (model)= ;
     "#;
     parse_grammar(view).unwrap();
 }
@@ -34,7 +34,7 @@ fn test_oil_invalid_view_missing_one_arg() {
 #[should_panic]
 fn test_oil_invalid_view_missing_args() {
     let view = r#"
-    view my-view = ;
+    view my_view = ;
     "#;
     parse_grammar(view).unwrap();
 }

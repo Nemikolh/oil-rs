@@ -170,23 +170,33 @@ node_text: Node = {
     },
 };
 
-class: () = ident property_value => ();
+class: () = ident "=" class_value => ();
 
 node_args: () = {
-    "[" ident "]" node_value => (),
+    "[" ident "]" "=" arg_value => (),
 };
 
 node_events: () = {
-    "(" ident ")" node_value => (),
+    "(" ident ")" "=" property => (),
 };
 
-node_value: () = {
-    "=" "StringLiteral" => (),
-    property_value => (),
+class_value: () = {
+    property => (),
+    anonymous_class => (),
 };
 
-property_value: () = {
-    "=" "{" property "}" => (),
+anonymous_class: () = {
+    "{" "}" => (),
+};
+
+arg_value: () = {
+    property => (),
+    object_value => (),
+    "StringLiteral" => (),
+};
+
+object_value: () = {
+    "{" "}" => (),
 };
 
 // =================================

@@ -55,11 +55,11 @@ fn test_ast_template_with_text_child() {
 
 #[test]
 fn test_ast_style_should_have_name_without_dot() {
-    let class = r#".some-class {}"#;
+    let class = r#".some_class {}"#;
     let package = parse_grammar(class).unwrap();
     assert_eq!(package.items.len(), 1);
     if let Item::Class(ref class) = package.items[0] {
-        assert_eq!(class.name, "some-class");
+        assert_eq!(class.name, "some_class");
     } else {
         assert!(false);
     }

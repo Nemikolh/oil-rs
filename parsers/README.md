@@ -109,10 +109,10 @@ Here are some explanation for each example:
 
 4. Images have a special convention. You can only import `$img`
  from an image. This symbol can only be used within a
- [class](#class) for the `background-image` property.
+ [class](#class) for the `background_image` property.
 
 5. Similarly to images, only `$font` can be imported from fonts
- files. It can also only be assigned to `font-family`.
+ files. It can also only be assigned to `font_family`.
  `(5a)` and `(5b)` are equivalent. In `(5b)`, the `bold`
  property is created, if the file is present, from a file
  that follow the naming convention `<name>-bold.<ext>` where `<name>`
@@ -160,21 +160,21 @@ Template can be defined like this:
 
 ```js
 // (1a)
-template my-template = // ...
+template my_template = // ...
 // (1b)
-template my-template [] = // ...
+template my_template [] = // ...
 
 
 // (2)
-template my-template [arg1, arg2] = // ...
+template my_template [arg1, arg2] = // ...
 
 // (3a)
-template my-template arg -> event // ...
+template my_template arg -> event // ...
 // (3b)
-template my-template [arg] -> (event) // ...
+template my_template [arg] -> (event) // ...
 
 // (4)
-template my-template [] -> (event1, event2) // ...
+template my_template [] -> (event1, event2) // ...
 ```
 
 1. Definition of a template with no parameters.
@@ -203,24 +203,24 @@ easy actually:
 
 ```html
 // Like this
-<my-template [arg1]={..} [arg2]={..}/>
+<my_template [arg1]={..} [arg2]={..}/>
 // We can pass constants for arguments:
-<my-template [arg1]="john" [arg2]="doe"/>
+<my_template [arg1]="john" [arg2]="doe"/>
 ```
 
-In the above example, valid definitions for `my-template`
+In the above example, valid definitions for `my_template`
 could be:
 
 ```js
-template my-template [arg1, arg2] = // ...
-template my-template [arg1, arg2] -> (event1) = // ...
-template my-template [arg1, arg2] -> (event1, event2) = // ...
+template my_template [arg1, arg2] = // ...
+template my_template [arg1, arg2] -> (event1) = // ...
+template my_template [arg1, arg2] -> (event1, event2) = // ...
 ```
 
 but not:
 
 ```js
-template my-template [arg1, arg2, arg3] = // ...
+template my_template [arg1, arg2, arg3] = // ...
 ```
 
 All input for a template must be satisfied, otherwise you'll get an
@@ -231,7 +231,7 @@ Only to a template parameter (argument or event) or to a view handlers
 property:
 
 ```html
-<my-template [arg1]={..} [arg2]={..} (event1)={..}/>
+<my_template [arg1]={..} [arg2]={..} (event1)={..}/>
 ```
 
 Additionally, all templates have a particular property called `class`
@@ -270,21 +270,21 @@ As you might expect, when using a template you can add
 children to it:
 
 ```html
-<my-template>
+<my_template>
     Children here!
-</my-template>
+</my_template>
 ```
 
-This will be rejected if `my-template` does not specify
+This will be rejected if `my_template` does not specify
 where those children should go.
 
 Here is how you do:
 
 ```jsx
-template my-template = <select:children />;
+template my_template = <select:children />;
 ```
 
-This will insert within `my-template` all children within
+This will insert within `my_template` all children within
 it.
 
 We plan to support the following kind of insertion:
@@ -311,9 +311,9 @@ Here is the list:
 
 * `group`: Does nothing, just a valid name to group elements.
 * `button`: Can receives focus and trigger event.
-* `text-input`: Can receive user text input and update a model property.
-* `check-box`: Can receive focus and update a logical model property.
-* `progress-bar`: Show progress.
+* `text_input`: Can receive user text input and update a model property.
+* `check_box`: Can receive focus and update a logical model property.
+* `progress_bar`: Show progress.
 * `if`: A control template (see below)
 * `for`: A control template (see below)
 * `switch`: A control template (see below)
@@ -346,8 +346,8 @@ of classes:
 
 ```css
 .btn {}
-.btn-danger {
-    background-color: #CB0000
+.btn_danger {
+    background_color: #CB0000
 }
 ```
 
@@ -385,12 +385,12 @@ creation and management easier.
 Here is an example of how view looks like:
 
 ```js
-view game-menu(model, handlers) =
-    <game-ui>
+view game_menu(model, handlers) =
+    <game_ui>
         Hello {model.name}!
-        <ui-button (click)={handlers.play}>Play</ui-button>
-        <ui-button (click)={handlers.quit}>Quit</ui-button>
-    </game-ui>
+        <ui_button (click)={handlers.play}>Play</ui_button>
+        <ui_button (click)={handlers.quit}>Quit</ui_button>
+    </game_ui>
 ;
 ```
 

@@ -4,7 +4,7 @@ use super::parse_grammar;
 #[test]
 fn test_oil_basic_template_no_args() {
     let template = r#"
-    template ui-el =
+    template ui_el =
         <el></el>;
     "#;
     parse_grammar(template).unwrap();
@@ -13,7 +13,7 @@ fn test_oil_basic_template_no_args() {
 #[test]
 fn test_oil_basic_template_no_args1() {
     let template = r#"
-    template ui-el [] =
+    template ui_el [] =
         <el></el>;
     "#;
     parse_grammar(template).unwrap();
@@ -22,7 +22,7 @@ fn test_oil_basic_template_no_args1() {
 #[test]
 fn test_oil_basic_template_unused_arg() {
     let template = r#"
-    template ui-el [a] =
+    template ui_el [a] =
         <el></el>;
     "#;
     parse_grammar(template).unwrap();
@@ -31,7 +31,7 @@ fn test_oil_basic_template_unused_arg() {
 #[test]
 fn test_oil_basic_template_no_args_export() {
     let template = r#"
-    export template ui-el =
+    export template ui_el =
         <el></el>;
     "#;
     parse_grammar(template).unwrap();
@@ -40,8 +40,8 @@ fn test_oil_basic_template_no_args_export() {
 #[test]
 fn test_oil_basic_template_with_args() {
     let template = r#"
-    template ui-el [el-class] =
-        <el class={el-class}></el>
+    template ui_el [el_class] =
+        <el class=el_class></el>
     ;"#;
     parse_grammar(template).unwrap();
 }
@@ -49,8 +49,8 @@ fn test_oil_basic_template_with_args() {
 #[test]
 fn test_oil_basic_template_with_args_export() {
     let template = r#"
-    export template ui-el [el-class] =
-        <el class={el-class}></el>;
+    export template ui_el [el_class] =
+        <el class=el_class></el>;
     "#;
     parse_grammar(template).unwrap();
 }
@@ -58,8 +58,17 @@ fn test_oil_basic_template_with_args_export() {
 #[test]
 fn test_oil_basic_template_with_args_return() {
     let template = r#"
-    template ui-el [el-class] -> event =
-        <el class={el-class} (click)={event}></el>;
+    template ui_el [el_class] -> event =
+        <el class=el_class (click)=event></el>;
+    "#;
+    parse_grammar(template).unwrap();
+}
+
+#[test]
+fn test_oil_basic_template_with_many_return() {
+    let template = r#"
+    template ui_el [] -> (event, event2) =
+        <el class=el_class (click)=event (event)=event2></el>;
     "#;
     parse_grammar(template).unwrap();
 }
@@ -67,7 +76,7 @@ fn test_oil_basic_template_with_args_return() {
 #[test]
 fn test_oil_template_with_text_child() {
     let template = r#"
-    export template ui-button [name] =
+    export template ui_button [name] =
         <button>Hello {name}</button>
     ;"#;
     parse_grammar(template).unwrap();
@@ -94,21 +103,40 @@ fn test_oil_template_with_binding_dot_dot_dot() {
 #[test]
 fn test_oil_template_with_many_child() {
     let template = r#"
-    export template ui-menu [game-name, btn-class] =
+    export template ui_menu [game_name, btn_class] =
         <group>
-            {game-name}
-            <button class={btn-class}>Play!</button>
-            <button class={btn-class}>Settings</button>
-            <button class={btn-class}>Quit</button>
+            {game_name}
+            <button class=btn_class>Play!</button>
+            <button class={.btn_class}>Settings</button>
+            <button class={.btn_class;}>Quit</button>
         </group>
     ;"#;
     parse_grammar(template).unwrap();
 }
 
 #[test]
-fn test_oil_template_static_attribute() {
+fn test_oil_template_style_anonymous_class() {
     let template = r#"
-    template ui-button =
+    export template ui_menu [game, btn_class] =
+        <group class={
+            .dark_theme                 if game.dark_theme;
+            width: 400px                if game.window.width > 300;
+            width: game.window.width    if game.window.width <= 300;
+            height: game.window.weight;
+        }>
+            {game.name}
+            <button class={.btn_class}>Play!</button>
+            <button class={.btn_class}>Settings</button>
+            <button class={.btn_class}>Quit</button>
+        </group>
+    ;"#;
+    parse_grammar(template).unwrap();
+}
+
+#[test]
+fn test_oil_template_static_argument() {
+    let template = r#"
+    template ui_button =
         <button [gotoview]="foo"></button>;
     "#;
     parse_grammar(template).unwrap();

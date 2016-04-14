@@ -46,9 +46,9 @@ For this phase, additional symbols are added. Typically,
 the one understood by oil such as:
 
 * `button`
-* `progress-bar`
+* `progress_bar`
 * `group`
-* `text-input`
+* `text_input`
 * `for` (previously named `repeat`)
 * [new] `if`
 * [new] `switch`

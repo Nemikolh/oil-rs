@@ -108,7 +108,7 @@ pub enum Tok<'input> {
     TextNode(&'input str),
 
     // Identifiers of various kinds:
-    DotId(StrView<'input>), // excludes the '.'
+    DotId(StrView<'input>),
     Id(StrView<'input>),
 
     // Symbols:
@@ -519,5 +519,5 @@ fn is_identifier_start(c: char) -> bool {
 
 fn is_identifier_continue(c: char) -> bool {
     // TODO: Is the last check necessary?
-    UnicodeXID::is_xid_continue(c) || c == '-'
+    UnicodeXID::is_xid_continue(c) || c == '_'
 }
