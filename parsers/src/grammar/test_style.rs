@@ -36,6 +36,12 @@ fn test_oil_style_class_def_with_many_args() {
 }
 
 #[test]
+fn test_oil_style_class_def_with_arg_used_as_property() {
+    let style = r#".some_class (a) {}"#;
+    parse_grammar(style).unwrap();
+}
+
+#[test]
 fn test_oil_style_class_def_condition_eq() {
     let style = r#".a { .b if c == d; }"#;
     parse_grammar(style).unwrap();
@@ -135,7 +141,7 @@ fn test_oil_style_properties() {
 fn test_oil_style_sub_img_explicit() {
     let style = r#"
     .btn {
-        background_image: $img[y: 172, x: 0, w: 400, h: 40];
+        background_image: $img[x: 0, y: 172, w: 400, h: 40];
     }
     "#;
     parse_grammar(style).unwrap();
@@ -145,7 +151,7 @@ fn test_oil_style_sub_img_explicit() {
 fn test_oil_style_sub_img_implicit() {
     let style = r#"
     .btn {
-        background_image: $img[172, 0, 400, 40];
+        background_image: $img[0, 172, 400, 40];
     }
     "#;
     parse_grammar(style).unwrap();
@@ -155,6 +161,27 @@ fn test_oil_style_sub_img_implicit() {
 fn test_oil_style_entire_img_alternatives() {
     { let style = r#".btn { background_image: $img[]; }"#; parse_grammar(style).unwrap(); }
     { let style = r#".btn { background_image: $img; }"#; parse_grammar(style).unwrap(); }
+}
+
+#[test]
+fn test_oil_style_expression_in_properties() {
+    let style = r#".expressions(a) {
+        margin_x: a.mx / 2 px;
+        margin_y: (a.my + 34) / 4 px;
+        // Testing multiples offset.
+        x: 0 px     if a.ox + 1 > 23;
+        x: a.mx / 2 if a.other;
+    }"#;
+    parse_grammar(style).unwrap();
+}
+
+#[test]
+fn test_oil_style_keywords() {
+    let style = r#".kwds(a) {
+        width: "auto" if a;
+        margin: "expand" if b;
+    }"#;
+    parse_grammar(style).unwrap();
 }
 
 #[test]

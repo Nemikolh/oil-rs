@@ -26,7 +26,9 @@ pub enum ErrorCode {
     UnterminatedStringLiteral,
     OnlyFontOrImg,
     UnmatchingTag,
+    InvalidVarName,
     InvalidUnit,
+    InvalidRange,
     InvalidQuery,
     InvalidSelect,
 }
@@ -98,6 +100,7 @@ pub enum Tok<'input> {
     View,
     Template,
     Export,
+    If,
 
     // Special keywords: these are accompanied by a series of
     // uninterpreted strings representing imports and stuff.
@@ -123,6 +126,17 @@ pub enum Tok<'input> {
     LessThanSlash,
     GreaterThan,
     SlashGreaterThan,
+    GreaterThanOrEqual,
+    LessThanOrEqual,
+    EqualsEquals,
+    BangEquals,
+    And,
+    Or,
+    Div,
+    Mod,
+    Pipe,
+    Bang,
+    Caret,
     Equals,
     Plus,
     Minus,
@@ -138,6 +152,7 @@ pub struct Tokenizer<'input> {
     lookahead: Option<(usize, char)>,
     shift: usize,
     state: TokState,
+    prev_state: TokState,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -157,6 +172,7 @@ const KEYWORDS: &'static [(&'static str, Tok<'static>)] = &[
     ("from", From),
     ("view", View),
     ("template", Template),
+    ("if", If),
     ];
 
 impl<'input> Tokenizer<'input> {
@@ -167,6 +183,7 @@ impl<'input> Tokenizer<'input> {
             lookahead: None,
             shift: shift,
             state: TokState::Normal,
+            prev_state: TokState::Normal,
         };
         t.bump();
         t
@@ -178,9 +195,12 @@ impl<'input> Tokenizer<'input> {
     }
 
     #[inline]
-    fn go_in_template(&mut self) {
+    fn go_in_template(&mut self) -> bool {
         if self.state == TokState::WaitingForEq {
             self.state = TokState::InTemplateOrView;
+            true
+        } else {
+            false
         }
     }
 
@@ -200,15 +220,29 @@ impl<'input> Tokenizer<'input> {
 
     #[inline]
     fn go_in_brace(&mut self) {
-        if self.state == TokState::InTemplateOrView {
-            self.state = TokState::InBrace;
+        match &self.state {
+            &TokState::InTemplateOrView => {
+                self.prev_state = TokState::InTemplateOrView;
+                self.state = TokState::InBrace;
+            }
+            &TokState::InTag => {
+                self.prev_state = TokState::InTag;
+                self.state = TokState::InBrace;
+            }
+            _ => (),
         }
     }
 
     #[inline]
     fn go_out_of_brace(&mut self) {
-        if self.state == TokState::InBrace {
-            self.state = TokState::InTemplateOrView;
+        match (&self.prev_state, &self.state) {
+            (&TokState::InTag, &TokState::InBrace) => {
+                self.state = TokState::InTag
+            }
+            (_, &TokState::InBrace) => {
+                self.state = TokState::InTemplateOrView;
+            }
+            _ => (),
         }
     }
 
@@ -231,15 +265,22 @@ impl<'input> Tokenizer<'input> {
                             self.bump();
                             Some(Ok((idx0, LessThanSlash, idx1+1)))
                         }
-                        _ => {
-                            Some(Ok((idx0, LessThan, idx0+1)))
+                        Some((idx1, '=')) => {
+                            self.bump();
+                            Some(Ok((idx0, LessThanOrEqual, idx1+1)))
                         }
+                        _ => Some(Ok((idx0, LessThan, idx0+1)))
                     }
                 }
                 Some((idx0, '>')) => {
                     self.go_out_of_tag();
-                    self.bump();
-                    Some(Ok((idx0, GreaterThan, idx0+1)))
+                    match self.bump() {
+                        Some((idx1, '=')) => {
+                            self.bump();
+                            Some(Ok((idx0, GreaterThanOrEqual, idx1+1)))
+                        }
+                        _ => Some(Ok((idx0, GreaterThan, idx0+1)))
+                    }
                 }
                 Some((idx0, '{')) => {
                     self.go_in_brace();
@@ -267,9 +308,8 @@ impl<'input> Tokenizer<'input> {
                             self.bump();
                             Some(Ok((idx0, SlashGreaterThan, idx1+1)))
                         }
-                        _ => {
-                            Some(error(UnrecognizedToken, idx0))
-                        }
+                        _ if self.not_text() => Some(Ok((idx0, Div, idx0+1))),
+                        _ => Some(error(UnrecognizedToken, idx0)),
                     }
                 }
                 // ====================================================
@@ -280,19 +320,17 @@ impl<'input> Tokenizer<'input> {
                             self.bump();
                             Some(Ok((idx0, Arrow, idx1+1)))
                         }
-                        Some((_, d)) if d.is_digit(10) => {
-                            Some(self.number(idx0))
-                        }
-                        _ => {
-                            Some(Ok((idx0, Minus, idx0+1)))
-                        }
+                        // Some((_, d)) if d.is_digit(10) => {
+                        //     Some(self.number(idx0))
+                        // }
+                        _ => Some(Ok((idx0, Minus, idx0+1))),
                     }
                 }
                 Some((idx0, '+')) if self.not_text() => {
                     match self.bump() {
-                        Some((_, d)) if d.is_digit(10) => {
-                            Some(self.number(idx0))
-                        }
+                        // Some((_, d)) if d.is_digit(10) => {
+                        //     Some(self.number(idx0))
+                        // }
                         _ => Some(Ok((idx0, Plus, idx0+1)))
                     }
                 }
@@ -313,6 +351,23 @@ impl<'input> Tokenizer<'input> {
                     let (_, _, end) = self.word(idx0);
                     Some(Ok((idx0, Id(StrView::from(self.text, idx0, end)), end)))
                 }
+                Some((idx0, '!')) if self.not_text() => {
+                    match self.bump() {
+                        Some((idx1, '=')) => {
+                            self.bump();
+                            Some(Ok((idx0, BangEquals, idx1+1)))
+                        }
+                        _ => Some(Ok((idx0, Bang, idx0+1)))
+                    }
+                }
+                Some((idx0, '%')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, Mod, idx0+1)))
+                }
+                Some((idx0, '^')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, Caret, idx0+1)))
+                }
                 Some((idx0, ':')) if self.not_text() => {
                     self.bump();
                     Some(Ok((idx0, Colon, idx0+1)))
@@ -327,9 +382,31 @@ impl<'input> Tokenizer<'input> {
                     Some(Ok((start, DotId(StrView::from(self.text, start, end)), end)))
                 }
                 Some((idx0, '=')) if self.not_text() => {
-                    self.go_in_template();
-                    self.bump();
-                    Some(Ok((idx0, Equals, idx0+1)))
+                    match (self.bump(), self.go_in_template()) {
+                        (Some((idx1, '=')), false) => {
+                            self.bump();
+                            Some(Ok((idx0, EqualsEquals, idx1+1)))
+                        }
+                        _ => Some(Ok((idx0, Equals, idx0+1))),
+                    }
+                }
+                Some((idx0, '&')) if self.not_text() => {
+                    match self.bump() {
+                        Some((idx1, '&')) => {
+                            self.bump();
+                            Some(Ok((idx0, And, idx1+1)))
+                        }
+                        _ => Some(error(UnrecognizedToken, idx0)),
+                    }
+                }
+                Some((idx0, '|')) if self.not_text() => {
+                    match self.bump() {
+                        Some((idx1, '|')) => {
+                            self.bump();
+                            Some(Ok((idx0, Or, idx1+1)))
+                        }
+                        _ => Some(Ok((idx0, Pipe, idx0+1))),
+                    }
                 }
                 Some((idx0, '[')) if self.not_text() => {
                     self.bump();

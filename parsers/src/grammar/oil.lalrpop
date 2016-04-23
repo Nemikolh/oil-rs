@@ -185,10 +185,6 @@ class_value: () = {
     anonymous_class => (),
 };
 
-anonymous_class: () = {
-    "{" "}" => (),
-};
-
 arg_value: () = {
     property => (),
     object_value => (),
@@ -203,25 +199,129 @@ object_value: () = {
 //          Styles
 //
 
-style: Class = {
-    <ex:export?> <name:"DotId"> "{" <props:style_properties*> "}" => {
-        Class {
-            exported: ex.is_some(),
-            name: (&*name)[1..].to_string(),
-            properties: props.into_iter().collect(),
+anonymous_class: AnonymousClass = {
+    "{" <props:style_property_or_include*> "}" => {
+        AnonymousClass {
+            includes: props.clone().into_iter().filter_map(is_include).collect(),
+            properties: props.into_iter().filter_map(is_props).collect(),
         }
     },
 };
 
-style_properties: (String, StyleProperty) = {
+style: Class = {
+    <ex:export?> <name:"DotId"> <args:style_args?> "{"
+        <props:style_property_or_include*>
+    "}" => {
+        Class {
+            exported: ex.is_some(),
+            name: (&*name)[1..].to_string(),
+            arguments: args.unwrap_or(vec![]),
+            includes: props.clone().into_iter().filter_map(is_include).collect(),
+            properties: props.into_iter().filter_map(is_props).collect(),
+        }
+    },
+};
+
+style_args: Vec<String> = {
+    "(" <args:comma<ident>> ")" =>
+        args.into_iter().map(|s| s.to_string()).collect(),
+};
+
+style_property_or_include: PropertyOrInclude = {
+    <prop:style_property> <cond:style_condition?> ";" =>
+        PropertyOrInclude::Property((prop.0, StyleValueCond { prop: prop.1, cond: cond })),
+    <incl:style_include>  <cond:style_condition?> ";" =>
+        PropertyOrInclude::Include(IncludeCond { incl: incl, cond: cond }),
+};
+
+style_include: Include = {
+    <name:"DotId"> <args:style_args?> => {
+        Include {
+            name: (&*name)[1..].to_string(),
+            arguments: args.unwrap_or(vec![]),
+        }
+    },
+};
+
+style_property: (String, StyleValue) = {
     <i:ident> ":" <s:style_value> => (i.to_string(), s),
 };
 
-style_value: StyleProperty = {
-    // Shall we have this case?
-    // "{" ident "}" =>
-    <n:number> <li:@L> <u:ident> ";" =>? match u {
-        "px" => Ok(StyleProperty::Number(n, Unit::Px)),
+style_condition: Box<Expr> = {
+    "if" <boolean_expression> => <>,
+};
+
+style_value: StyleValue = {
+    <s:"StringLiteral"> => StyleValue::Keyword(s.to_string()),
+    <h:"Hex"> => StyleValue::Hex(h.to_string()),
+    <le:@L> <e:expression> <li:@L> <prop:img_view_or_unit?> =>? {
+        match prop {
+            Some(ImgViewOrUnit::ImgView(sub_img)) => {
+                if !is_valid_img_range(&sub_img) {
+                    Err(ParseError::User {
+                        error: tok::Error {
+                            location: li,
+                            code: tok::ErrorCode::InvalidRange,
+                        }
+                    })
+                } else if let Expr::VarAccess(access) = *e {
+                    let x_pos = sub_img.iter()
+                        .position(|&x| x.0.map(|a| a == "x").unwrap_or(false))
+                        .unwrap_or(0);
+                    let y_pos = sub_img.iter()
+                        .position(|&x| x.0.map(|a| a == "y").unwrap_or(false))
+                        .unwrap_or(1);
+                    let w_pos = sub_img.iter()
+                        .position(|&x| x.0.map(|a| a == "w").unwrap_or(false))
+                        .unwrap_or(2);
+                    let h_pos = sub_img.iter()
+                        .position(|&x| x.0.map(|a| a == "h").unwrap_or(false))
+                        .unwrap_or(3);
+                    Ok(StyleValue::Img {
+                        ident: access.to_string(),
+                        view_x: sub_img.get(x_pos).map(|&x| x.1),
+                        view_y: sub_img.get(y_pos).map(|&x| x.1),
+                        view_w: sub_img.get(w_pos).map(|&x| x.1),
+                        view_h: sub_img.get(h_pos).map(|&x| x.1),
+                    })
+                } else {
+                    Err(ParseError::User {
+                        error: tok::Error {
+                            location: le,
+                            code: tok::ErrorCode::InvalidVarName
+                        }
+                    })
+                }
+            }
+            Some(ImgViewOrUnit::Unit(u)) => {
+                Ok(StyleValue::Length(e, u))
+            }
+            None => {
+                if let Expr::VarAccess(access) = *e {
+                    if &*access == "$font" {
+                        Ok(StyleValue::Font {
+                            ident: access.to_string(),
+                        })
+                    } else {
+                        Ok(StyleValue::Img {
+                            ident: access.to_string(),
+                            view_x: None,
+                            view_y: None,
+                            view_w: None,
+                            view_h: None,
+                        })
+                    }
+                } else {
+                    Ok(StyleValue::Unspecified(e))
+                }
+            }
+        }
+    },
+};
+
+style_unit: Unit = {
+    <li:@L> <u:ident> =>? match u {
+        "px" => Ok(Unit::Px),
         _ => Err(ParseError::User {
             error: tok::Error {
                 location: li,
@@ -229,20 +329,11 @@ style_value: StyleProperty = {
             }
         })
     },
-    <h:"Hex"> ";" => StyleProperty::Hex(h.to_string()),
-    <font_or_img:ident>  <prop:img_props?> ";" => {
-        match prop {
-            Some(_) => {
-                // TODO:
-                assert_eq!(font_or_img, "$img");
-                StyleProperty::Font
-            },
-            None => {
-                assert!(font_or_img == "$font" || font_or_img == "$img");
-                StyleProperty::Font
-            }
-        }
-    },
+};
+
+img_view_or_unit: ImgViewOrUnit<'input> = {
+    <prop:img_props> => ImgViewOrUnit::ImgView(prop),
+    <unit:style_unit> => ImgViewOrUnit::Unit(unit),
 };
 
 img_props: Vec<(Option<&'input str>, f32)> = {
@@ -275,6 +366,74 @@ comma<T>: Vec<T> =
         v.into_iter().chain(o).collect();
 
 // =================================
+//          Expressions
+//
+
+boolean_expression: Box<Expr> = {
+    expression,
+};
+
+expression: Box<Expr> = {
+    simple_expression,
+    simple_expression relop simple_expression => Box::new(Expr::BinaryOp(<>)),
+};
+
+simple_expression: Box<Expr> = {
+    term,
+    simple_expression addop term => Box::new(Expr::BinaryOp(<>)),
+};
+
+term: Box<Expr> = {
+    factor,
+    term mulop factor => Box::new(Expr::BinaryOp(<>)),
+};
+
+factor: Box<Expr> = {
+    sign factor => Box::new(Expr::Signed(<>)),
+    exponentiation,
+};
+
+exponentiation: Box<Expr> = {
+    primary,
+    <p:primary> "^" <e:exponentiation> =>
+        Box::new(Expr::BinaryOp(p, OpCode::Pow, e)),
+};
+
+primary: Box<Expr> = {
+    property => Box::new(Expr::VarAccess(<>.to_string())),
+    number => Box::new(Expr::Number(<>)),
+    "(" <expression> ")" => <>,
+    "!" <primary> => Box::new(Expr::Not(<>)),
+};
+
+sign: Sign = {
+    "+" => Sign::Plus,
+    "-" => Sign::Minus,
+};
+
+addop: OpCode = {
+    "+" => OpCode::Add,
+    "-" => OpCode::Sub,
+    "||" => OpCode::Or,
+};
+
+mulop: OpCode = {
+    "*" => OpCode::Mul,
+    "/" => OpCode::Div,
+    "%" => OpCode::Mod,
+    "&&" => OpCode::And,
+};
+
+relop: OpCode = {
+    "==" => OpCode::EqEq,
+    "!=" => OpCode::NotEq,
+    "<" => OpCode::LessThan,
+    ">" => OpCode::GreaterThan,
+    "<=" => OpCode::LessThanOrEq,
+    ">=" => OpCode::GreaterThanOrEq,
+};
+
+// =================================
 //          Tokens
 //
 extern {
@@ -286,6 +445,7 @@ extern {
         "view" => Tok::View,
         "template" => Tok::Template,
         "export" => Tok::Export,
+        "if" => Tok::If,
 
         // Special keywords accompanied by a series of
         // uninterpreted strings representing path
@@ -311,8 +471,21 @@ extern {
         "</" => Tok::LessThanSlash,
         ">" => Tok::GreaterThan,
         "/>" => Tok::SlashGreaterThan,
+
+        // Boolean expressions
+        "&&" => Tok::And,
+        "||" => Tok::Or,
+        ">=" => Tok::GreaterThanOrEqual,
+        "<=" => Tok::LessThanOrEqual,
+        "==" => Tok::EqualsEquals,
+        "!=" => Tok::BangEquals,
         //"#" => Tok::Hash,
         //"?" => Tok::Question,
+        "/" => Tok::Div,
+        "%" => Tok::Mod,
+        "|" => Tok::Pipe,
+        "!" => Tok::Bang,
+        "^" => Tok::Caret,
         "=" => Tok::Equals,
         "+" => Tok::Plus,
         "-" => Tok::Minus,

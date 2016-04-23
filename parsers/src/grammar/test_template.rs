@@ -107,7 +107,7 @@ fn test_oil_template_with_many_child() {
         <group>
             {game_name}
             <button class=btn_class>Play!</button>
-            <button class={.btn_class}>Settings</button>
+            <button class={.btn_class;}>Settings</button>
             <button class={.btn_class;}>Quit</button>
         </group>
     ;"#;
@@ -121,13 +121,16 @@ fn test_oil_template_style_anonymous_class() {
         <group class={
             .dark_theme                 if game.dark_theme;
             width: 400px                if game.window.width > 300;
-            width: game.window.width    if game.window.width <= 300;
-            height: game.window.weight;
+            width: game.window.width px if game.window.width <= 300;
+            // Equivalent as above: the unit is inferred based on the property.
+            // As `height` accept only length and `px` is the default unit,
+            // this is equivalent to "game.window.height px"
+            height: game.window.height;
         }>
             {game.name}
-            <button class={.btn_class}>Play!</button>
-            <button class={.btn_class}>Settings</button>
-            <button class={.btn_class}>Quit</button>
+            <button class={.btn_class;}>Play!</button>
+            <button class={.btn_class;}>Settings</button>
+            <button class={.btn_class;}>Quit</button>
         </group>
     ;"#;
     parse_grammar(template).unwrap();
