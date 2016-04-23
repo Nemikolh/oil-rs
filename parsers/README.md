@@ -341,14 +341,10 @@ Style! Here we go.
 ### Basics
 
 Classes are defined by prefixing an ident with a `.` and followed
-with a curly brace block. The following are all valid definition
-of classes:
+with a curly brace block. The following definition is correct:
 
 ```css
 .btn {}
-.btn_danger {
-    background_color: #CB0000
-}
 ```
 
 But that one is not:
@@ -357,11 +353,99 @@ But that one is not:
 btn {}
 ```
 
-When a class is applied to an element, you can
+A class can contains multiples properties. They are defined like this:
 
-### Available properties
+```css
+.btn {
+    <property> : <value>;
+}
+```
 
-> TODO
+The list of valid properties is described in the following table:
+
+| Property name           | Accepted values              |
+| ----------------------- | ---------------------------- |
+| `left`                  | Length                       |
+| `right`                 | Length                       |
+| `top`                   | Length                       |
+| `bottom`                | Length                       |
+| `height`                | Length                       |
+| `width`                 | Length, `"auto"`, `"expand"` |
+| `margin`                | Length, `"auto"`, `"expand"` |
+| `margin_left`           | Length, `"auto"`, `"expand"` |
+| `margin_right`          | Length, `"auto"`, `"expand"` |
+| `margin_top`            | Length, `"auto"`             |
+| `margin_bottom`         | Length, `"auto"`             |
+| `padding`               | Length                       |
+| `padding_left`          | Length                       |
+| `padding_right`         | Length                       |
+| `padding_top`           | Length                       |
+| `padding_bottom`        | Length                       |
+| `border`                | Length                       |
+| `border_left`           | Length                       |
+| `border_right`          | Length                       |
+| `border_top`            | Length                       |
+| `border_bottom`         | Length                       |
+| `font_size`             | Length                       |
+| `opacity`               | Unit-less value in [0, 1]    |
+| `visible`               | Boolean                      |
+| `focus`                 | `"accept"`, `"ignore"`       |
+| `font_color`            | Color                        |
+| `background_color`      | Color                        |
+| `font`                  | Font object                  |
+| `background_image`      | Ident                        |
+| `background_image_rule` | *TBD*                        |
+| `layout`                | *TBD*                        |
+
+A length can be either an expression or a value and should be followed
+with a unit. Alternatively some special keywords are possible as values
+such as `"auto"` or `"expand"`. They shouldn't be followed by a value.
+
+To apply a class on an element, you use the `class` attribute of the
+element like this:
+
+```html
+<el class=my_class></el>
+```
+
+### Advanced use
+
+So far, classes looks pretty limited as they mainly express static
+visual constrains on the style. So how can we express more complex
+visual?
+
+First, classes can also be parameterize like template. Here is an
+example:
+
+```css
+.btn(color) {
+    font_color: color;
+}
+```
+
+It is also possible to conditionally include a property using `if`.
+The following is a valid class:
+
+```css
+.main_menu(game) {
+    width: game.window.width px if game.window.width <= 300;
+    width: 300px                if game.window.width  > 300;
+    height: game.window.height
+}
+```
+
+Now, you can see that we can express much more complex layout without
+much pain.
+
+Also, you can include other classes within your class. For instance:
+
+```css
+.main_menu_dark_theme(game) {
+    .main_menu(game);
+    background_color: #FFFFFF if game.dark_theme;
+}
+```
+Element can also declare anonymous class:
 
 ## <a name="model-event"></a> Model and event handling
 
