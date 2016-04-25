@@ -15,10 +15,16 @@ pub enum NodeType {
     RootTemplate
 }
 
+#[derive(PartialEq, Clone, Debug)]
+pub struct Attribute {
+    pub name: String,
+    pub value: String,
+}
+
 #[derive(Clone, Debug)]
 pub struct Node {
     pub children: Vec<Node>,
-    classes: Option<String>,
+    pub classes: Option<String>,
     pub node_type: NodeType,
 }
 

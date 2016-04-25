@@ -451,8 +451,6 @@ impl<'input> Tokenizer<'input> {
                             }
                         })
                     }
-
-                    println!("Not matched!");
                     Some(error(UnrecognizedToken, idx0))
                 }
                 None => {

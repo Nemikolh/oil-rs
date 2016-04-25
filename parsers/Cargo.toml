@@ -20,6 +20,6 @@ lalrpop-util = "0.11.0"
 phf_codegen = "0.7.12"
 lalrpop = { path = "../../lalrpop/lalrpop/" }
 
-# [dependencies.oil_shared]
-# path = "../shared"
-# version = "=0.2.0"
+[dependencies.oil_repr]
+path = "../repr"
+version = "=0.2.0"

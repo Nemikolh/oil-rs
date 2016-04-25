@@ -12,7 +12,7 @@ extern crate glium;
 extern crate image;
 extern crate cgmath;
 extern crate oil_parsers;
-extern crate oil_shared;
+extern crate oil_repr;
 extern crate oil_databindings;
 
 #[cfg(test)]

@@ -1,13 +1,13 @@
 
 [package]
-name = "oil_shared"
+name = "oil_repr"
 version = "0.2.0"
 authors = ["Nemikolh <joan.varvenne@gmail.com>", "Vaelden <maugan.villatel@gmail.com>"]
 homepage = "http://oil-lang.github.io/"
 repository = "https://github.com/oil-lang/oil-rs"
 license = "MIT"
-keywords = ["ui", "parser"]
-description = "Support code shared by oil libraries."
+keywords = ["ui", "oil"]
+description = "Support code shared by oil libraries. Include binary representation."
 build = "build.rs"
 
 [dependencies]
