@@ -146,6 +146,43 @@ fn test_oil_template_static_argument() {
 }
 
 #[test]
+fn test_oil_template_object_argument_simple_expr() {
+    let template = r#"
+    template ui_button =
+        <el [arg1]={foo}></el>;
+    "#;
+    parse_grammar(template).unwrap();
+}
+
+#[test]
+fn test_oil_template_object_argument_complex_expr() {
+    let template = r#"
+    template ui_button =
+        <el [arg1]={foo + foo ^ 2}></el>;
+    "#;
+    parse_grammar(template).unwrap();
+}
+
+#[test]
+fn test_oil_template_object_argument_property_renaming() {
+    let template = r#"
+    template ui_button =
+        <el [arg1]={settings.foo: foo + foo ^ 2, bar: 23, test: "text"}></el>;
+    "#;
+    parse_grammar(template).unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_oil_template_invalid_arg_anonymous_class() {
+    let template = r#"
+    template ui_button =
+        <e [arg1]={foo if b}></e>;
+    "#;
+    parse_grammar(template).unwrap();
+}
+
+#[test]
 #[should_panic]
 fn test_oil_template_not_matching() {
     let template = r#"

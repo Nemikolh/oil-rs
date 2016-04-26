@@ -107,7 +107,12 @@ events: Vec<String> = {
 
 node: Node = {
     // Some tag
-    "<" <lo:@L> <tag_open:ident> <hi:@R> <cl:class?> <args:node_args*> <ev:node_events*> ">" node*
+    "<" <lo:@L> <tag_open:ident> <hi:@R>
+        <cl:class?>
+        <args:node_args*>
+        <ev:node_events*>
+    ">"
+        node*
     "</" <errlo:@L> <tag_close:ident> ">" =>? {
         if tag_open == tag_close {
             Ok(Node {
@@ -181,18 +186,32 @@ node_events: () = {
 };
 
 class_value: () = {
-    property => (),
+    ident => (),
     anonymous_class => (),
 };
 
 arg_value: () = {
     property => (),
-    object_value => (),
-    "StringLiteral" => (),
+    object => (),
 };
 
-object_value: () = {
-    "{" "}" => (),
+object: () = {
+    "StringLiteral" => (),
+    "{" object_expr "}" => (),
+};
+
+object_expr: () = {
+    <exp:expression> => (),
+    <entries:comma<object_entry>> => (),
+};
+
+object_entry: () = {
+    property ":" object_entry_value => (),
+};
+
+object_entry_value: () = {
+    "StringLiteral" => (),
+    expression => (),
 };
 
 // =================================
