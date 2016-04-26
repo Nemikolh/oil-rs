@@ -11,12 +11,12 @@ needs like scopes, privacy and modules.
 In the web world, if you consider web components
 or limit yourself to a subset of features and
 use a bit of JavaScript, you can re-add those
-missing basic features.
+missing features.
 
-As oil is new, we can provides those features while
-still preserving a web tech look and feel in the
-language. Especially because web dev are already
-used to have external tools to fill that hole.
+As oil is new we can provide those features from
+the start. If you have used React or Angular, you will
+probably find yourself at home after reading this
+specification.
 
 This specification describes the (now unified) oil
 grammar as well as semantics of the language.
@@ -36,12 +36,11 @@ This specs is organized as follows:
 
 A user interface in oil is defined by files
 with the prefix `.oil` and will usually reside
-close to a rust core application that will use
-them:
+close to a rust application that will use them
+during the build step. Here is an example:
 
 ```
 .
-├── Cargo.lock
 ├── Cargo.toml
 ├── ui
 │   ├── main.oil
@@ -57,14 +56,21 @@ them:
     └── oil_model.rs
 ```
 
-Those files are only needed for development.
-When publishing your application, they will
-be packed together with all their dependencies
-into a [binary format](#packaging).
+A package is simply a file ending with the `.oil`
+extension. But we might also refer as an oil library
+as it expose only one package called `lib.oil`.
 
-They can then be be either embedded directly
-into the executable or loaded from the disk
-or even from the network.
+If you are coming from Rust, you can think of a package
+as you think of a crate.
+
+If you are coming from JavaScript / NodeJS, think of it
+as the file referenced by the `main` field in `package.json`.
+
+> Note:
+>   Those files are only needed for development.
+>   When publishing your application, they will
+>   be packed together with all their dependencies
+>   into a [binary format](#packaging).
 
 ## <a name="symbol-res"></a> Symbol resolution
 
@@ -96,7 +102,7 @@ import $font from './resources/font.otf';
 
 The path are resolved relatively to the file importing
 them when they start with `./` or `../` otherwise, they
-follow the [lookup rule](#lookup-rule) defined below.
+follow the [lookup rule](#lookup-rule).
 
 Here are some explanation for each example:
 
@@ -143,20 +149,18 @@ or replace a few symbol from a dependency and without changing
 the main bit, you can have an entirely new look and feel for
 your user interface. =)
 
-Besides, as cargo is used as a lookup point, you can
-use it to publish and manage your UI components.
+Cargo is the *de facto* packet manager for oil.
 
 ## <a name="template"></a> Template syntax
 
 ### Basics
 
 Template are similar to web components. They embed a piece
-of UI for easy re-use. This is very useful when you want
-to control in one place the appearance of the buttons of
-a menu for instance. This is also a fundamental component
-for easily having a uniform look and feel in your game.
+of UI for easy re-use. A template defines a piece of UI
+structure and the layout ordering for its children. Like in
+HTML, this is a tree of templates.
 
-Template can be defined like this:
+Template are defined like this:
 
 ```js
 // (1a)
@@ -177,14 +181,14 @@ template my_template [arg] -> (event) // ...
 template my_template [] -> (event1, event2) // ...
 ```
 
-1. Definition of a template with no parameters.
+1. Definition of a template with no parameters. Examples
 `(1a)` and `(1b)` are equivalent.
 
 2. Parentheses are used for argument. You can specify
 as many as you want.
 
 3. Template can also trigger events such as `close`, `play`, ...
-Anything you want. They appear after the `->` syntax.
+Anything you want. They appear after the `->` syntax. Examples
 `(3a)` and `(3b)` are equivalent.
 
 4. As you can have many parameters, you can trigger
@@ -192,7 +196,7 @@ many events.
 
 ### Parameters
 
-A template parameter is either an input used or an event triggered.
+A template parameter is either an argument (input) or an event (output).
 When you use a template that declares both events and arguments in
 its signature, you are free to ignore some or all events, but you
 must provides values for all arguments.
@@ -337,6 +341,10 @@ In order to display multiples elements, you can use the
 ## <a name="class"></a> Classes (like css ones, yes!)
 
 Style! Here we go.
+
+Classes are the basic for style re-use.This is very
+useful when you want to control in one place the
+appearance of the buttons of a menu for instance.
 
 ### Basics
 
@@ -530,3 +538,7 @@ between UI and the game engine.
 > TODO: move it elsewhere
 
 > Mention about the oil tool that run at build time.
+
+They can then be be either embedded directly
+into the executable or loaded from the disk
+or even from the network.
