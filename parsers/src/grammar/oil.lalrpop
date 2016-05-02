@@ -55,6 +55,7 @@ template_or_style_or_view: Item = {
     <t:template> => Item::Template(t),
     <c:style> => Item::Class(c),
     view => Item::View,
+    <v:variable> => Item::Variable(v),
 };
 
 path: &'input str = {
@@ -175,43 +176,31 @@ node_text: Node = {
     },
 };
 
-class: () = ident "=" class_value => ();
+class: AnonymousClassOrIdent =
+    <lo:@L> <clkw:ident> "=" <val:class_value> =>? {
+        if clkw == "class" {
+            Ok(val)
+        } else {
+            Err(ParseError::User {
+                error: tok::Error {
+                    location: lo,
+                    code: tok::ErrorCode::UnrecognizedToken,
+                }
+            })
+        }
+    };
 
-node_args: () = {
-    "[" ident "]" "=" arg_value => (),
+class_value: AnonymousClassOrIdent = {
+    <id:ident> => AnonymousClassOrIdent::Ident(id.to_string()),
+    <ac:anonymous_class> => AnonymousClassOrIdent::AnCls(ac),
+};
+
+node_args: (String, Box<ObjectValue>) = {
+    "[" <i:ident> "]" "=" <a:object_as_arg_value> => (i.to_string(), a),
 };
 
 node_events: () = {
     "(" ident ")" "=" property => (),
-};
-
-class_value: () = {
-    ident => (),
-    anonymous_class => (),
-};
-
-arg_value: () = {
-    property => (),
-    object => (),
-};
-
-object: () = {
-    "StringLiteral" => (),
-    "{" object_expr "}" => (),
-};
-
-object_expr: () = {
-    <exp:expression> => (),
-    <entries:comma<object_entry>> => (),
-};
-
-object_entry: () = {
-    property ":" object_entry_value => (),
-};
-
-object_entry_value: () = {
-    "StringLiteral" => (),
-    expression => (),
 };
 
 // =================================
@@ -221,8 +210,7 @@ object_entry_value: () = {
 anonymous_class: AnonymousClass = {
     "{" <props:style_property_or_include*> "}" => {
         AnonymousClass {
-            includes: props.clone().into_iter().filter_map(is_include).collect(),
-            properties: props.into_iter().filter_map(is_props).collect(),
+            properties: props,
         }
     },
 };
@@ -235,8 +223,7 @@ style: Class = {
             exported: ex.is_some(),
             name: (&*name)[1..].to_string(),
             arguments: args.unwrap_or(vec![]),
-            includes: props.clone().into_iter().filter_map(is_include).collect(),
-            properties: props.into_iter().filter_map(is_props).collect(),
+            properties: props,
         }
     },
 };
@@ -246,11 +233,11 @@ style_args: Vec<String> = {
         args.into_iter().map(|s| s.to_string()).collect(),
 };
 
-style_property_or_include: PropertyOrInclude = {
+style_property_or_include: RawPropertyOrInclude = {
     <prop:style_property> <cond:style_condition?> ";" =>
-        PropertyOrInclude::Property((prop.0, StyleValueCond { prop: prop.1, cond: cond })),
+        RawPropertyOrInclude::RawProperty((prop.0, StyleValueCond { prop: prop.1, cond: cond })),
     <incl:style_include>  <cond:style_condition?> ";" =>
-        PropertyOrInclude::Include(IncludeCond { incl: incl, cond: cond }),
+        RawPropertyOrInclude::Include(IncludeCond { incl: incl, cond: cond }),
 };
 
 style_include: Include = {
@@ -316,23 +303,7 @@ style_value: StyleValue = {
                 Ok(StyleValue::Length(e, u))
             }
             None => {
-                if let Expr::VarAccess(access) = *e {
-                    if &*access == "$font" {
-                        Ok(StyleValue::Font {
-                            ident: access.to_string(),
-                        })
-                    } else {
-                        Ok(StyleValue::Img {
-                            ident: access.to_string(),
-                            view_x: None,
-                            view_y: None,
-                            view_w: None,
-                            view_h: None,
-                        })
-                    }
-                } else {
-                    Ok(StyleValue::Unspecified(e))
-                }
+                Ok(StyleValue::Unspecified(e))
             }
         }
     },
@@ -365,6 +336,17 @@ img_prop: (Option<&'input str>, f32) = {
 };
 
 // =================================
+//          Variables
+//
+
+variable: Variable = {
+    "let" <n:ident> "=" <o:object> ";" => Variable {
+        name: n.to_string(),
+        properties: o,
+    },
+};
+
+// =================================
 //          View
 //
 
@@ -383,6 +365,34 @@ view_args: () = {
 comma<T>: Vec<T> =
     <v:(<T> ",")*> <o:T?> =>
         v.into_iter().chain(o).collect();
+
+// =================================
+//          Objects
+//
+
+// Almost similar as below. Note the difference
+// with expression replaced by property
+// This is needed to avoid a problem with expression
+// that need to be wrapped
+object_as_arg_value: Box<ObjectValue> = {
+    <s:"StringLiteral"> => Box::new(ObjectValue::StrLit(s.to_string())),
+    <p:property> =>
+        Box::new(ObjectValue::Expr(Box::new(Expr::VarAccess(p.to_string())))),
+    "{" <exp:expression> "}" => Box::new(ObjectValue::Expr(exp)),
+    "{" <entries:comma<object_entry>> "}" =>
+        Box::new(ObjectValue::Props(entries.into_iter().collect())),
+};
+
+object: Box<ObjectValue> = {
+    <s:"StringLiteral"> => Box::new(ObjectValue::StrLit(s.to_string())),
+    <exp:expression> => Box::new(ObjectValue::Expr(exp)),
+    "{" <entries:comma<object_entry>> "}" =>
+        Box::new(ObjectValue::Props(entries.into_iter().collect())),
+};
+
+object_entry: (String, Box<ObjectValue>) = {
+    <p:property> ":" <e:object> => (p.to_string(), e),
+};
 
 // =================================
 //          Expressions
@@ -465,6 +475,7 @@ extern {
         "template" => Tok::Template,
         "export" => Tok::Export,
         "if" => Tok::If,
+        "let" => Tok::Let,
 
         // Special keywords accompanied by a series of
         // uninterpreted strings representing path

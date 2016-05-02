@@ -33,8 +33,19 @@ pub enum Components {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Item {
     View,
+    Variable(Variable),
     Template(Template),
     Class(Class),
+}
+
+// =================================
+//          AST: Variable
+//
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Variable {
+    pub name: String,
+    pub properties: Box<ObjectValue>,
 }
 
 // =================================
@@ -46,26 +57,30 @@ pub struct Class {
     pub exported: bool,
     pub name: String,
     pub arguments: Vec<String>,
-    pub includes: Vec<IncludeCond>,
-    pub properties: HashMap<String, StyleValueCond>,
+    pub properties: Vec<RawPropertyOrInclude>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AnonymousClass {
-    pub includes: Vec<IncludeCond>,
-    pub properties: HashMap<String, StyleValueCond>,
+    pub properties: Vec<RawPropertyOrInclude>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Include {
-    pub name: String,
-    pub arguments: Vec<String>,
+pub enum RawPropertyOrInclude {
+    Include(IncludeCond),
+    RawProperty((String, StyleValueCond)),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IncludeCond {
     pub incl: Include,
     pub cond: Option<Box<Expr>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Include {
+    pub name: String,
+    pub arguments: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -87,9 +102,6 @@ pub enum StyleValue {
         view_w: Option<f32>,
         view_h: Option<f32>,
     },
-    Font {
-        ident: String,
-    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -101,7 +113,7 @@ pub enum Unit {
 //          AST: Template
 //
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Template {
     pub exported: bool,
     pub name: String,
@@ -110,13 +122,13 @@ pub struct Template {
     pub nodes: Vec<Node>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Node {
     pub span: Span,
     pub kind: NodeKind,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum NodeKind {
     Text {
         content: String
@@ -125,8 +137,8 @@ pub enum NodeKind {
         property: String,
     },
     Tag {
-        class: Option<()>,
-        arguments: Vec<()>,
+        class: Option<AnonymousClassOrIdent>,
+        arguments: Vec<(String, Box<ObjectValue>)>,
         events: Vec<()>,
     },
     Query {
@@ -137,6 +149,19 @@ pub enum NodeKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum QueryKind {
     Children
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnonymousClassOrIdent {
+    Ident(String),
+    AnCls(AnonymousClass),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ObjectValue {
+    StrLit(String),
+    Expr(Box<Expr>),
+    Props(HashMap<String, Box<ObjectValue>>),
 }
 
 // =================================
@@ -179,29 +204,6 @@ pub enum OpCode {
 // =================================
 //          Utilities
 //
-// (not really part of the ast)
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum PropertyOrInclude {
-    Include(IncludeCond),
-    Property((String, StyleValueCond)),
-}
-
-pub fn is_include(prop_or_include: PropertyOrInclude) -> Option<IncludeCond> {
-    if let PropertyOrInclude::Include(s) = prop_or_include {
-        Some(s)
-    } else {
-        None
-    }
-}
-
-pub fn is_props(prop_or_include: PropertyOrInclude) -> Option<(String, StyleValueCond)> {
-    if let PropertyOrInclude::Property(p) = prop_or_include {
-        Some(p)
-    } else {
-        None
-    }
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ImgViewOrUnit<'input> {

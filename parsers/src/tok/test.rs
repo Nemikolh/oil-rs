@@ -1,14 +1,5 @@
 use super::{StrView, TokState, Tokenizer, Tok};
 
-macro_rules! assert_variant {
-    ($e:expr, $variant:path) => (
-        if let $variant(_) = $e {
-        } else {
-            assert!(false);
-        }
-    );
-}
-
 #[test]
 fn test_strview_should_eq_str() {
     let some_str = "hello &é)*ù!";

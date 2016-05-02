@@ -22,6 +22,8 @@ mod test_mixed;
 #[cfg(test)]
 mod test_import;
 #[cfg(test)]
+mod test_variable;
+#[cfg(test)]
 mod test_style;
 #[cfg(test)]
 mod test_template;

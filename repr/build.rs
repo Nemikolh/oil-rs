@@ -6,7 +6,7 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 fn main() {
-    let path = Path::new(&env::var("OUT_DIR").unwrap()).join("phf_generated.rs");
+    let path = Path::new(&env::var("OUT_DIR").unwrap()).join("known_properties.rs");
     let mut file = BufWriter::new(File::create(&path).unwrap());
 
     write!(&mut file, "pub static STYLE_PROPERTIES: phf::Map<&'static str, PropertyName> = ").unwrap();
@@ -20,27 +20,27 @@ fn main() {
         .entry("width", "PropertyName::WIDTH")
         // Margin properties
         .entry("margin", "PropertyName::MARGIN")
-        .entry("margin-left", "PropertyName::MARGIN_LEFT")
-        .entry("margin-right", "PropertyName::MARGIN_RIGHT")
-        .entry("margin-top", "PropertyName::MARGIN_TOP")
-        .entry("margin-bottom", "PropertyName::MARGIN_BOTTOM")
+        .entry("margin_left", "PropertyName::MARGIN_LEFT")
+        .entry("margin_right", "PropertyName::MARGIN_RIGHT")
+        .entry("margin_top", "PropertyName::MARGIN_TOP")
+        .entry("margin_bottom", "PropertyName::MARGIN_BOTTOM")
         // Padding properties
         .entry("padding", "PropertyName::PADDING")
-        .entry("padding-left", "PropertyName::PADDING_LEFT")
-        .entry("padding-right", "PropertyName::PADDING_RIGHT")
-        .entry("padding-top", "PropertyName::PADDING_TOP")
-        .entry("padding-bottom", "PropertyName::PADDING_BOTTOM")
+        .entry("padding_left", "PropertyName::PADDING_LEFT")
+        .entry("padding_right", "PropertyName::PADDING_RIGHT")
+        .entry("padding_top", "PropertyName::PADDING_TOP")
+        .entry("padding_bottom", "PropertyName::PADDING_BOTTOM")
         // Border properties
         .entry("border", "PropertyName::BORDER")
-        .entry("border-left", "PropertyName::BORDER_LEFT")
-        .entry("border-right", "PropertyName::BORDER_RIGHT")
-        .entry("border-top", "PropertyName::BORDER_TOP")
-        .entry("border-bottom", "PropertyName::BORDER_BOTTOM")
+        .entry("border_left", "PropertyName::BORDER_LEFT")
+        .entry("border_right", "PropertyName::BORDER_RIGHT")
+        .entry("border_top", "PropertyName::BORDER_TOP")
+        .entry("border_bottom", "PropertyName::BORDER_BOTTOM")
         // Layout mode (absolute / rtl / ltr)
         .entry("layout", "PropertyName::LAYOUT_MODE")
         // Background image
-        .entry("background-image", "PropertyName::BACKGROUND_IMAGE")
-        .entry("background-image-rule", "PropertyName::BACKGROUND_IMAGE_RULE")
+        .entry("background_image", "PropertyName::BACKGROUND_IMAGE")
+        .entry("background_image_rule", "PropertyName::BACKGROUND_IMAGE_RULE")
         .build(&mut file)
         .unwrap();
 

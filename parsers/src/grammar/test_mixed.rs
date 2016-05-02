@@ -22,7 +22,7 @@ fn test_mixed_style_template() {
       <group>
         <local_btn>Hello {name}</local_btn>
         <d>
-          <progress_bar value=progress></progress_bar>
+          <progress_bar [value]=progress></progress_bar>
           <logo></logo>
         </d>
       </group>;

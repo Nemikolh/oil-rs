@@ -46,7 +46,7 @@ pub enum PropertyName {
     BACKGROUND_IMAGE,
 }
 
-include!(concat!(env!("OUT_DIR"), "/phf_generated.rs"));
+include!(concat!(env!("OUT_DIR"), "/known_properties.rs"));
 
 //
 //  Generated:

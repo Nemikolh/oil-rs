@@ -149,7 +149,7 @@ fn test_oil_template_static_argument() {
 fn test_oil_template_object_argument_simple_expr() {
     let template = r#"
     template ui_button =
-        <el [arg1]={foo}></el>;
+        <el [arg1]=foo></el>;
     "#;
     parse_grammar(template).unwrap();
 }
@@ -168,6 +168,18 @@ fn test_oil_template_object_argument_property_renaming() {
     let template = r#"
     template ui_button =
         <el [arg1]={settings.foo: foo + foo ^ 2, bar: 23, test: "text"}></el>;
+    "#;
+    parse_grammar(template).unwrap();
+}
+
+#[test]
+fn test_oil_template_object_crazy_nesting() {
+    let template = r#"
+    template something =
+        <el [a]={test: {
+            aa: "foo",
+            bb: 12 + 35
+        }, test1: "set", test1.crazy: "bar"}></el>;
     "#;
     parse_grammar(template).unwrap();
 }
