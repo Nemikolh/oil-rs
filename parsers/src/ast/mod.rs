@@ -33,17 +33,18 @@ pub enum Components {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Item {
     View,
-    Variable(Variable),
+    Model(Model),
     Template(Template),
     Class(Class),
 }
 
 // =================================
-//          AST: Variable
+//          AST: Model
 //
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Variable {
+pub struct Model {
+    pub exported: bool,
     pub name: String,
     pub properties: Box<ObjectValue>,
 }
@@ -170,10 +171,17 @@ pub enum ObjectValue {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
+    /// A raw number
     Number(f32),
+    /// A var access such as `a.b.c`
     VarAccess(String),
+    /// A new model instance: `new ModelName`
+    New(String),
+    /// A binary operation between two things such as `a + b`
     BinaryOp(Box<Expr>, OpCode, Box<Expr>),
+    /// Negation of an expression
     Not(Box<Expr>),
+    /// A signed expression.
     Signed(Sign, Box<Expr>),
 }
 

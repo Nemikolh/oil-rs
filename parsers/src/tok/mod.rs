@@ -99,9 +99,10 @@ pub enum Tok<'input> {
     From,
     View,
     Template,
+    DataType,
     Export,
+    New,
     If,
-    Let,
 
     // Special keywords: these are accompanied by a series of
     // uninterpreted strings representing imports and stuff.
@@ -173,8 +174,9 @@ const KEYWORDS: &'static [(&'static str, Tok<'static>)] = &[
     ("from", From),
     ("view", View),
     ("template", Template),
+    ("datatype", DataType),
+    ("new", New),
     ("if", If),
-    ("let", Let),
     ];
 
 impl<'input> Tokenizer<'input> {

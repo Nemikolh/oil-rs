@@ -55,7 +55,7 @@ template_or_style_or_view: Item = {
     <t:template> => Item::Template(t),
     <c:style> => Item::Class(c),
     view => Item::View,
-    <v:variable> => Item::Variable(v),
+    <v:model> => Item::Model(v),
 };
 
 path: &'input str = {
@@ -339,8 +339,9 @@ img_prop: (Option<&'input str>, f32) = {
 //          Variables
 //
 
-variable: Variable = {
-    "let" <n:ident> "=" <o:object> ";" => Variable {
+model: Model = {
+    <e:export?> "datatype" <n:ident> "=" <o:object> ";" => Model {
+        exported: e.is_some(),
         name: n.to_string(),
         properties: o,
     },
@@ -429,6 +430,7 @@ exponentiation: Box<Expr> = {
 };
 
 primary: Box<Expr> = {
+    "new" <ident> => Box::new(Expr::New(<>.to_string())),
     property => Box::new(Expr::VarAccess(<>.to_string())),
     number => Box::new(Expr::Number(<>)),
     "(" <expression> ")" => <>,
@@ -473,9 +475,10 @@ extern {
         "from" => Tok::From,
         "view" => Tok::View,
         "template" => Tok::Template,
+        "datatype" => Tok::DataType,
         "export" => Tok::Export,
+        "new" => Tok::New,
         "if" => Tok::If,
-        "let" => Tok::Let,
 
         // Special keywords accompanied by a series of
         // uninterpreted strings representing path
