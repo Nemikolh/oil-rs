@@ -52,10 +52,10 @@ components: Components = {
 };
 
 template_or_style_or_view: Item = {
-    <t:template> => Item::Template(t),
-    <c:style> => Item::Class(c),
-    view => Item::View,
-    <v:model> => Item::Model(v),
+    template => Item::Template(<>),
+    style => Item::Class(<>),
+    view => Item::View(<>),
+    model => Item::Model(<>),
 };
 
 path: &'input str = {
@@ -199,8 +199,8 @@ node_args: (String, Box<ObjectValue>) = {
     "[" <i:ident> "]" "=" <a:object_as_arg_value> => (i.to_string(), a),
 };
 
-node_events: () = {
-    "(" ident ")" "=" property => (),
+node_events: (String, String) = {
+    "(" <i:ident> ")" "=" <p:property> => (i.to_string(), p.to_string()),
 };
 
 // =================================
@@ -336,7 +336,7 @@ img_prop: (Option<&'input str>, f32) = {
 };
 
 // =================================
-//          Variables
+//          Model
 //
 
 model: Model = {
@@ -351,12 +351,17 @@ model: Model = {
 //          View
 //
 
-view: () = {
-    "view" "Id" view_args "=" node ";" => (),
+view: View = {
+    "view" <i:ident> <args:view_args> "=" <n:node> ";" => View {
+        name: i.to_string(),
+        model_name: args.0,
+        handlers_name: args.1,
+        node: n,
+    },
 };
 
-view_args: () = {
-    "(" ident "," ident ")" => (),
+view_args: (String, String) = {
+    "(" <m:ident> "," <h:ident> ")" => (m.to_string(), h.to_string()),
 };
 
 // =================================

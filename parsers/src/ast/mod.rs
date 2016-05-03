@@ -32,10 +32,22 @@ pub enum Components {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Item {
-    View,
+    View(View),
     Model(Model),
     Template(Template),
     Class(Class),
+}
+
+// =================================
+//          AST: View
+//
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct View {
+    pub name: String,
+    pub model_name: String,
+    pub handlers_name: String,
+    pub node: Node,
 }
 
 // =================================
@@ -140,7 +152,7 @@ pub enum NodeKind {
     Tag {
         class: Option<AnonymousClassOrIdent>,
         arguments: Vec<(String, Box<ObjectValue>)>,
-        events: Vec<()>,
+        events: Vec<(String, String)>,
     },
     Query {
         kind: QueryKind,
