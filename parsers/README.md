@@ -245,6 +245,7 @@ Parameters can be set to the following object types:
 
 * Constants, typically string.
 * Model property or model itself.
+* Private state object. *(see more about this, [here](#internal-state))*
 * Handler property.
 * Classes
 
@@ -528,6 +529,37 @@ between UI and the game engine.
 >     On the other hand, the UI can both modify the model
 >     to talk to the engine and use the event system.
 
+### <a name="internal-state"></a> Internal state
+
+Quite often, part of the UI have some complex state that is not
+part of the model and does not make sense to be stored there.
+
+A typical example would be formating a value into a percentage or
+more generally performing a basic mathematical operation.
+
+But it can also be doing some renaming to match a template
+requirements.
+
+Additionally when designing a UI, it is quite useful to have fake
+data at hand. It comes very handy when designing a piece of UI.
+However, if this data is immutable, limited or just very different
+from Game data it will prove being less useful.
+
+So `oil` support creating types with default property and associated values.
+From the point of view of the UI designer, they behave exactly like the game
+ones and have no differences. They can store state and evolve over time.
+
+The main difference is that they are totally hidden from the Game engine.
+And this is **good**. It is the private part of the UI that the engine shouldn't
+care of. It is by design and considered as a feature.
+
+So how do we declare a type? Here's how:
+
+```
+datatype MyType = {
+
+};
+```
 
 ## <a name="img-fonts"></a> Supported images and fonts format
 

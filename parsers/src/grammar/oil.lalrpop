@@ -195,7 +195,7 @@ class_value: AnonymousClassOrIdent = {
     <ac:anonymous_class> => AnonymousClassOrIdent::AnCls(ac),
 };
 
-node_args: (String, Box<ObjectValue>) = {
+node_args: (String, ObjectValue) = {
     "[" <i:ident> "]" "=" <a:object_as_arg_value> => (i.to_string(), a),
 };
 
@@ -216,7 +216,7 @@ anonymous_class: AnonymousClass = {
 };
 
 style: Class = {
-    <ex:export?> <name:"DotId"> <args:style_args?> "{"
+    <ex:export?> <name:"DotId"> <args:arguments?> "{"
         <props:style_property_or_include*>
     "}" => {
         Class {
@@ -228,11 +228,6 @@ style: Class = {
     },
 };
 
-style_args: Vec<String> = {
-    "(" <args:comma<ident>> ")" =>
-        args.into_iter().map(|s| s.to_string()).collect(),
-};
-
 style_property_or_include: RawPropertyOrInclude = {
     <prop:style_property> <cond:style_condition?> ";" =>
         RawPropertyOrInclude::RawProperty((prop.0, StyleValueCond { prop: prop.1, cond: cond })),
@@ -241,7 +236,7 @@ style_property_or_include: RawPropertyOrInclude = {
 };
 
 style_include: Include = {
-    <name:"DotId"> <args:style_args?> => {
+    <name:"DotId"> <args:arguments?> => {
         Include {
             name: (&*name)[1..].to_string(),
             arguments: args.unwrap_or(vec![]),
@@ -340,10 +335,11 @@ img_prop: (Option<&'input str>, f32) = {
 //
 
 model: Model = {
-    <e:export?> "datatype" <n:ident> "=" <o:object> ";" => Model {
+    <e:export?> "datatype" <n:ident> <a:arguments?> "=" <o:object> ";" => Model {
         exported: e.is_some(),
         name: n.to_string(),
         properties: o,
+        arguments: a.unwrap_or(vec![]),
     },
 };
 
@@ -380,23 +376,23 @@ comma<T>: Vec<T> =
 // with expression replaced by property
 // This is needed to avoid a problem with expression
 // that need to be wrapped
-object_as_arg_value: Box<ObjectValue> = {
-    <s:"StringLiteral"> => Box::new(ObjectValue::StrLit(s.to_string())),
+object_as_arg_value: ObjectValue = {
+    <s:"StringLiteral"> => ObjectValue::StrLit(s.to_string()),
     <p:property> =>
-        Box::new(ObjectValue::Expr(Box::new(Expr::VarAccess(p.to_string())))),
-    "{" <exp:expression> "}" => Box::new(ObjectValue::Expr(exp)),
+        ObjectValue::Expr(Box::new(Expr::VarAccess(p.to_string()))),
+    "{" <exp:expression> "}" => ObjectValue::Expr(exp),
     "{" <entries:comma<object_entry>> "}" =>
-        Box::new(ObjectValue::Props(entries.into_iter().collect())),
+        ObjectValue::Props(entries.into_iter().collect()),
 };
 
-object: Box<ObjectValue> = {
-    <s:"StringLiteral"> => Box::new(ObjectValue::StrLit(s.to_string())),
-    <exp:expression> => Box::new(ObjectValue::Expr(exp)),
+object: ObjectValue = {
+    <s:"StringLiteral"> => ObjectValue::StrLit(s.to_string()),
+    <exp:expression> => ObjectValue::Expr(exp),
     "{" <entries:comma<object_entry>> "}" =>
-        Box::new(ObjectValue::Props(entries.into_iter().collect())),
+        ObjectValue::Props(entries.into_iter().collect()),
 };
 
-object_entry: (String, Box<ObjectValue>) = {
+object_entry: (String, ObjectValue) = {
     <p:property> ":" <e:object> => (p.to_string(), e),
 };
 
@@ -435,11 +431,21 @@ exponentiation: Box<Expr> = {
 };
 
 primary: Box<Expr> = {
-    "new" <ident> => Box::new(Expr::New(<>.to_string())),
+    "new" <i:ident> <a:arguments_obj?> =>
+        Box::new(Expr::New(i.to_string(), a.unwrap_or(vec![]))),
     property => Box::new(Expr::VarAccess(<>.to_string())),
     number => Box::new(Expr::Number(<>)),
     "(" <expression> ")" => <>,
     "!" <primary> => Box::new(Expr::Not(<>)),
+};
+
+arguments_obj: Vec<ObjectValue> = {
+    "(" <comma<object>> ")" => <>,
+};
+
+arguments: Vec<String> = {
+    "(" <args:comma<ident>> ")" =>
+        args.into_iter().map(|s| s.to_string()).collect(),
 };
 
 sign: Sign = {

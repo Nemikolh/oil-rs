@@ -35,6 +35,11 @@
 
 ## Style
 
+> Note: Originally, `oil` has been using a custom layout algorithm
+>       and I now think we should try to implement the `flexbox` one
+>       first and come back later to the original one if it proves
+>       to be needed.
+
 | Feature name            | Internal Representation | End2end            |
 | ----------------------- | ----------------------- | ------------------ |
 | Anonymous classes       |           *TBD*         |                    |

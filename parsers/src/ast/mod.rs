@@ -58,7 +58,8 @@ pub struct View {
 pub struct Model {
     pub exported: bool,
     pub name: String,
-    pub properties: Box<ObjectValue>,
+    pub properties: ObjectValue,
+    pub arguments: Vec<String>,
 }
 
 // =================================
@@ -151,7 +152,7 @@ pub enum NodeKind {
     },
     Tag {
         class: Option<AnonymousClassOrIdent>,
-        arguments: Vec<(String, Box<ObjectValue>)>,
+        arguments: Vec<(String, ObjectValue)>,
         events: Vec<(String, String)>,
     },
     Query {
@@ -174,7 +175,7 @@ pub enum AnonymousClassOrIdent {
 pub enum ObjectValue {
     StrLit(String),
     Expr(Box<Expr>),
-    Props(HashMap<String, Box<ObjectValue>>),
+    Props(HashMap<String, ObjectValue>),
 }
 
 // =================================
@@ -187,8 +188,8 @@ pub enum Expr {
     Number(f32),
     /// A var access such as `a.b.c`
     VarAccess(String),
-    /// A new model instance: `new ModelName`
-    New(String),
+    /// A new model instance: `new ModelName(a, b)`
+    New(String, Vec<ObjectValue>),
     /// A binary operation between two things such as `a + b`
     BinaryOp(Box<Expr>, OpCode, Box<Expr>),
     /// Negation of an expression

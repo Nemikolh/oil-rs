@@ -22,7 +22,7 @@ mod test_mixed;
 #[cfg(test)]
 mod test_import;
 #[cfg(test)]
-mod test_model;
+mod test_data;
 #[cfg(test)]
 mod test_style;
 #[cfg(test)]
