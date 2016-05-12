@@ -103,6 +103,8 @@ pub enum Tok<'input> {
     Export,
     New,
     If,
+    True,
+    False,
 
     // Special keywords: these are accompanied by a series of
     // uninterpreted strings representing imports and stuff.
@@ -177,6 +179,8 @@ const KEYWORDS: &'static [(&'static str, Tok<'static>)] = &[
     ("datatype", DataType),
     ("new", New),
     ("if", If),
+    ("true", True),
+    ("false", False),
     ];
 
 impl<'input> Tokenizer<'input> {
@@ -583,7 +587,11 @@ impl<'input> Iterator for Tokenizer<'input> {
             None =>
                 None,
             Some(Ok((l, t, r))) => {
-                println!("{:?}", t);
+                if cfg!(test) {
+                    println!("{:?}", t);
+                } else {
+                    debug!("{:?}", t);
+                }
                 Some(Ok((l+self.shift, t, r+self.shift)))
             }
             Some(Err(Error { location, code })) =>

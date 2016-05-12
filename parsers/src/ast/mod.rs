@@ -1,5 +1,10 @@
 use std::collections::HashMap;
 
+
+pub use self::traverse::traverse;
+pub use self::traverse::PackageVisitor;
+
+mod traverse;
 #[cfg(test)]
 mod test;
 
@@ -33,7 +38,7 @@ pub enum Components {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Item {
     View(View),
-    Model(Model),
+    DataType(DataType),
     Template(Template),
     Class(Class),
 }
@@ -44,21 +49,30 @@ pub enum Item {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct View {
+    /// Name of the view.
     pub name: String,
+    /// Name of the model parameter
     pub model_name: String,
+    /// Name of the handlers parameter
     pub handlers_name: String,
+    /// Single root node that start the view.
     pub node: Node,
 }
 
 // =================================
-//          AST: Model
+//          AST: DataType
 //
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Model {
+pub struct DataType {
+    /// True if the type is visible outside of this `Package`.
     pub exported: bool,
+    /// Name of the data type
     pub name: String,
+    /// Properties of for each value of that type
+    /// and their default value (can use arguments)
     pub properties: ObjectValue,
+    /// Constructor argument to the data type.
     pub arguments: Vec<String>,
 }
 
@@ -68,58 +82,84 @@ pub struct Model {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Class {
+    /// Is the class visible outside of this Package?
     pub exported: bool,
+    /// Name of the class
     pub name: String,
+    /// Arguments accepted by this class
     pub arguments: Vec<String>,
+    /// List of properties of this class
     pub properties: Vec<RawPropertyOrInclude>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AnonymousClass {
+    /// Properties of this anonymous class
     pub properties: Vec<RawPropertyOrInclude>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum RawPropertyOrInclude {
+    /// Other class included
     Include(IncludeCond),
+    /// Property key value
     RawProperty((String, StyleValueCond)),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IncludeCond {
+    /// Included class parameters
     pub incl: Include,
+    /// Condition that must hold to include all the property
+    /// of the `incl` class.
     pub cond: Option<Box<Expr>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Include {
+    /// Name of the class that will be included in that one.
     pub name: String,
+    /// Arguments to the style inclusion
     pub arguments: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct StyleValueCond {
+    /// Property value
     pub prop: StyleValue,
+    /// Condition that must hold to apply this value to the property.
     pub cond: Option<Box<Expr>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum StyleValue {
+    /// A length value
     Length(Box<Expr>, Unit),
+    /// A property keyword, represented as string literals
     Keyword(String),
+    /// Unspecified type (will depend on the property)
     Unspecified(Box<Expr>),
+    /// Hexadecimal value (useful for colors)
     Hex(String),
+    /// Image variant can accept argument
+    /// to restrict the image to be displayed.
     Img {
+        /// Ident that should represent an image
         ident: String,
+        /// X offset of the view
         view_x: Option<f32>,
+        /// Y offset of the view
         view_y: Option<f32>,
+        /// Width of the view
         view_w: Option<f32>,
+        /// Height of the view
         view_h: Option<f32>,
     },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Unit {
+    /// Pixel unit. The only one for now.
     Px
 }
 
@@ -129,52 +169,84 @@ pub enum Unit {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Template {
+    /// Is this template visible outside of this Package?
     pub exported: bool,
+    /// Name of the template
     pub name: String,
+    /// Arguments name accepted by the template
     pub arguments: Vec<String>,
+    /// Events accepted by the template
     pub events: Vec<String>,
+    /// Children of this template
     pub nodes: Vec<Node>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Node {
+    /// Span for location (used for error messages)
     pub span: Span,
+    /// Node type.
     pub kind: NodeKind,
+    /// Children
+    pub children: Vec<Node>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NodeKind {
+    /// A text node, no processing require apart
+    /// from preserving the text.
     Text {
+        /// The actual text.
         content: String
     },
+    /// This node is a text binding.
     Binding {
+        /// The binding is done on the following
+        /// property.
         property: String,
     },
+    /// A generic tag use `<tag></tag>`
     Tag {
+        /// The name of the tag.
+        name: String,
+        /// The class argument attaching style properties
+        /// to that node.
         class: Option<AnonymousClassOrIdent>,
+        /// The arguments that are passed to the template
+        /// used to instantiate that node.
         arguments: Vec<(String, ObjectValue)>,
+        /// The events passed to the template used to
+        /// instantiate that node.
         events: Vec<(String, String)>,
     },
+    /// Query node `<select:query />`
     Query {
+        /// Query type
         kind: QueryKind,
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum QueryKind {
+    /// Select all children.
     Children
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum AnonymousClassOrIdent {
+    /// Simple identifier
     Ident(String),
+    /// Anonymouse class case
     AnCls(AnonymousClass),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ObjectValue {
+    /// A string literal
     StrLit(String),
+    /// An expression
     Expr(Box<Expr>),
+    /// A list of properties
     Props(HashMap<String, ObjectValue>),
 }
 
@@ -184,6 +256,8 @@ pub enum ObjectValue {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
+    /// Boolean,
+    Boolean(bool),
     /// A raw number
     Number(f32),
     /// A var access such as `a.b.c`

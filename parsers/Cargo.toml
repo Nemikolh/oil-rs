@@ -12,6 +12,7 @@ build = "build.rs"
 
 [dependencies]
 phf = "0.7.12"
+log = "0.3.6"
 num = "0.1.30"
 unicode-xid = "0.0.2"
 lalrpop-util = "0.11.0"

@@ -55,7 +55,7 @@ template_or_style_or_view: Item = {
     template => Item::Template(<>),
     style => Item::Class(<>),
     view => Item::View(<>),
-    model => Item::Model(<>),
+    datatype => Item::DataType(<>),
 };
 
 path: &'input str = {
@@ -113,12 +113,14 @@ node: Node = {
         <args:node_args*>
         <ev:node_events*>
     ">"
-        node*
+        <children:node*>
     "</" <errlo:@L> <tag_close:ident> ">" =>? {
         if tag_open == tag_close {
             Ok(Node {
                 span: Span(lo, hi),
+                children: children,
                 kind: NodeKind::Tag {
+                    name: tag_open.to_string(),
                     class: cl,
                     arguments: args,
                     events: ev,
@@ -139,6 +141,7 @@ node: Node = {
             if query == "children" {
                 Ok(Node {
                     span: Span(selo, hi),
+                    children: vec![],
                     kind: NodeKind::Query {
                         kind: QueryKind::Children
                     }
@@ -167,11 +170,13 @@ node_text: Node = {
     // Text Node (pure text)
     <lo:@L> <t:"TextNode"> <hi:@R> => Node {
         span: Span(lo, hi),
+        children: vec![],
         kind: NodeKind::Text { content: t.to_string() },
     },
     // A text binding
     <lo:@L> "{" <p:property> "}" <hi:@R> => Node {
         span: Span(lo, hi),
+        children: vec![],
         kind: NodeKind::Binding { property: p.to_string() },
     },
 };
@@ -331,11 +336,11 @@ img_prop: (Option<&'input str>, f32) = {
 };
 
 // =================================
-//          Model
+//          DataType
 //
 
-model: Model = {
-    <e:export?> "datatype" <n:ident> <a:arguments?> "=" <o:object> ";" => Model {
+datatype: DataType = {
+    <e:export?> "datatype" <n:ident> <a:arguments?> "=" <o:object> ";" => DataType {
         exported: e.is_some(),
         name: n.to_string(),
         properties: o,
@@ -431,6 +436,8 @@ exponentiation: Box<Expr> = {
 };
 
 primary: Box<Expr> = {
+    "true" => Box::new(Expr::Boolean(true)),
+    "false" => Box::new(Expr::Boolean(false)),
     "new" <i:ident> <a:arguments_obj?> =>
         Box::new(Expr::New(i.to_string(), a.unwrap_or(vec![]))),
     property => Box::new(Expr::VarAccess(<>.to_string())),
@@ -490,6 +497,8 @@ extern {
         "export" => Tok::Export,
         "new" => Tok::New,
         "if" => Tok::If,
+        "true" => Tok::True,
+        "false" => Tok::False,
 
         // Special keywords accompanied by a series of
         // uninterpreted strings representing path

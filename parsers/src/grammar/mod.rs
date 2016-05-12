@@ -5,10 +5,10 @@ use ast;
 mod oil;
 
 
-pub type ParseError<'input> = lalrpop_util::ParseError<usize, tok::Tok<'input>, tok::Error>;
+pub type Error<'input> = lalrpop_util::ParseError<usize, tok::Tok<'input>, tok::Error>;
 
 pub fn parse_grammar<'input>(input: &'input str)
-                             -> Result<ast::Package, ParseError<'input>>
+                             -> Result<ast::Package, Error<'input>>
 {
     let tokenizer = tok::Tokenizer::new(input, 0);
     oil::parse_ui_package(tokenizer)
