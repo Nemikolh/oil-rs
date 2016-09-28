@@ -28,21 +28,21 @@ fn test_error_import_img_or_font() {
 }
 
 #[test]
-fn test_error_unmatchintag_in_template_or_view() {
-    let template = r#"template tmp = <test></tst>;"#;
-    assert_err_code!(template, tok::ErrorCode::UnmatchingTag)
+fn test_error_unmatchintag_in_component_or_view() {
+    let component = r#"component tmp = <test></tst>;"#;
+    assert_err_code!(component, tok::ErrorCode::UnmatchingTag)
 }
 
 #[test]
 fn test_error_invalid_select() {
-    let template = r#"template tmp = <why:we/>;"#;
-    assert_err_code!(template, tok::ErrorCode::InvalidSelect)
+    let component = r#"component tmp = <why:we/>;"#;
+    assert_err_code!(component, tok::ErrorCode::InvalidSelect)
 }
 
 #[test]
 fn test_error_invalid_query() {
-    let template = r#"template tmp = <select:we/>;"#;
-    assert_err_code!(template, tok::ErrorCode::InvalidQuery)
+    let component = r#"component tmp = <select:we/>;"#;
+    assert_err_code!(component, tok::ErrorCode::InvalidQuery)
 }
 
 #[test]

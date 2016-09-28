@@ -13,10 +13,10 @@ fn test_valid_local_name_resolution_for_classes() {
 }
 
 #[test]
-fn test_valid_local_name_resolution_for_templates() {
+fn test_valid_local_name_resolution_for_components() {
     let package_txt = r#"
-    template a = <button></button>;
-    template el = <a></a>;
+    component a = <button></button>;
+    component el = <a></a>;
     "#;
     let mut ast = parse_grammar(package_txt).unwrap();
     pass_resolve_names(&mut ast).expect("Name should all have been resolved.");
@@ -26,7 +26,7 @@ fn test_valid_local_name_resolution_for_templates() {
 fn test_valid_local_name_resolution_for_mixed() {
     let package_txt = r#"
     .some_class {}
-    template el = <button class=some_class></button>;
+    component el = <button class=some_class></button>;
     "#;
     let mut ast = parse_grammar(package_txt).unwrap();
     pass_resolve_names(&mut ast).expect("Name should all have been resolved.");
@@ -34,10 +34,10 @@ fn test_valid_local_name_resolution_for_mixed() {
 
 #[test]
 #[should_panic]
-fn test_invalid_local_name_resolution_for_templates() {
+fn test_invalid_local_name_resolution_for_components() {
     let package_txt = r#"
-    template a = <button></button>;
-    template el = <b></b>;
+    component a = <button></button>;
+    component el = <b></b>;
     "#;
     let mut ast = parse_grammar(package_txt).unwrap();
     pass_resolve_names(&mut ast).expect("Name should all have been resolved.");

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 grammar<'input>;
 
 pub ui_package: Package = {
-    <vi:import*> <items:template_or_style_or_view*> => {
+    <vi:import*> <items:component_or_style_or_view*> => {
         Package {
             imports: vi,
             items: items,
@@ -51,8 +51,8 @@ components: Components = {
     },
 };
 
-template_or_style_or_view: Item = {
-    template => Item::Template(<>),
+component_or_style_or_view: Item = {
+    component => Item::Component(<>),
     style => Item::Class(<>),
     view => Item::View(<>),
     datatype => Item::DataType(<>),
@@ -72,13 +72,13 @@ property: tok::StrView<'input> = {
 };
 
 // =================================
-//          Templates
+//          Components
 //
 
-template: Template = {
-    <ex:export?> "template" <n:ident>
-    <args:template_args?> <events:trigg_events?> "=" <ns:node*> ";" => {
-        Template {
+component: Component = {
+    <ex:export?> "component" <n:ident>
+    <args:component_args?> <events:trigg_events?> "=" <ns:node*> ";" => {
+        Component {
             exported: ex.is_some(),
             name: n.to_string(),
             arguments: args.unwrap_or(vec![]),
@@ -90,7 +90,7 @@ template: Template = {
 
 export: () = "export" => ();
 
-template_args: Vec<String> = {
+component_args: Vec<String> = {
     <arg:ident> => vec![arg.to_string()],
     "[" <args:comma<ident>> "]" =>
         args.into_iter().map(|s| s.to_string()).collect(),
@@ -492,7 +492,7 @@ extern {
         "import" => Tok::Import,
         "from" => Tok::From,
         "view" => Tok::View,
-        "template" => Tok::Template,
+        "component" => Tok::Component,
         "datatype" => Tok::DataType,
         "export" => Tok::Export,
         "new" => Tok::New,

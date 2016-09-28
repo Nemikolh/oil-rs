@@ -26,6 +26,6 @@ mod test_data;
 #[cfg(test)]
 mod test_style;
 #[cfg(test)]
-mod test_template;
+mod test_component;
 #[cfg(test)]
 mod test_view;

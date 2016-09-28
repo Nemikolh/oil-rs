@@ -34,10 +34,10 @@ fn test_model_decl_with_submodel() {
 }
 
 #[test]
-fn test_model_use_in_template() {
+fn test_model_use_in_component() {
     let model = r#"
     datatype Test(a) = { a: a };
-    template test = <el [arg1]={new Test("test")}></el>;
+    component test = <el [arg1]={new Test("test")}></el>;
     "#;
     parse_grammar(model).unwrap();
 }

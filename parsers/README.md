@@ -26,7 +26,7 @@ This specs is organized as follows:
 * [Package definition](#pack-def)
 * [Symbol resolution](#symbol-res)
 * [Package lookup rule](#lookup-rule)
-* [Template syntax](#template)
+* [Component syntax](#component)
 * [Classes](#class)
 * [Model resolution](#model-event)
 * [Supported image and fonts](#img-fonts)
@@ -151,43 +151,43 @@ your user interface. =)
 
 Cargo is the *de facto* packet manager for oil.
 
-## <a name="template"></a> Template syntax
+## <a name="component"></a> Component syntax
 
 ### Basics
 
-Template are similar to web components. They embed a piece
-of UI for easy re-use. A template defines a piece of UI
+Component are similar to web components. They embed a piece
+of UI for easy re-use. A component defines a piece of UI
 structure and the layout ordering for its children. Like in
-HTML, this is a tree of templates.
+HTML, this is a tree of components.
 
-Template are defined like this:
+Component are defined like this:
 
 ```js
 // (1a)
-template my_template = // ...
+component my_component = // ...
 // (1b)
-template my_template [] = // ...
+component my_component [] = // ...
 
 
 // (2)
-template my_template [arg1, arg2] = // ...
+component my_component [arg1, arg2] = // ...
 
 // (3a)
-template my_template arg -> event // ...
+component my_component arg -> event // ...
 // (3b)
-template my_template [arg] -> (event) // ...
+component my_component [arg] -> (event) // ...
 
 // (4)
-template my_template [] -> (event1, event2) // ...
+component my_component [] -> (event1, event2) // ...
 ```
 
-1. Definition of a template with no parameters. Examples
+1. Definition of a component with no parameters. Examples
 `(1a)` and `(1b)` are equivalent.
 
 2. Parentheses are used for argument. You can specify
 as many as you want.
 
-3. Template can also trigger events such as `close`, `play`, ...
+3. Component can also trigger events such as `close`, `play`, ...
 Anything you want. They appear after the `->` syntax. Examples
 `(3a)` and `(3b)` are equivalent.
 
@@ -196,49 +196,49 @@ many events.
 
 ### Parameters
 
-A template parameter is either an argument (input) or an event (output).
-When you use a template that declares both events and arguments in
+A component parameter is either an argument (input) or an event (output).
+When you use a component that declares both events and arguments in
 its signature, you are free to ignore some or all events, but you
 must provides values for all arguments.
 
-If a template is declared to have parameters, you may wonder
-how to pass those parameters to the template. This is pretty
+If a component is declared to have parameters, you may wonder
+how to pass those parameters to the component. This is pretty
 easy actually:
 
 ```html
 // Like this
-<my_template [arg1]={..} [arg2]={..}/>
+<my_component [arg1]={..} [arg2]={..}/>
 // We can pass constants for arguments:
-<my_template [arg1]="john" [arg2]="doe"/>
+<my_component [arg1]="john" [arg2]="doe"/>
 ```
 
-In the above example, valid definitions for `my_template`
+In the above example, valid definitions for `my_component`
 could be:
 
 ```js
-template my_template [arg1, arg2] = // ...
-template my_template [arg1, arg2] -> (event1) = // ...
-template my_template [arg1, arg2] -> (event1, event2) = // ...
+component my_component [arg1, arg2] = // ...
+component my_component [arg1, arg2] -> (event1) = // ...
+component my_component [arg1, arg2] -> (event1, event2) = // ...
 ```
 
 but not:
 
 ```js
-template my_template [arg1, arg2, arg3] = // ...
+component my_component [arg1, arg2, arg3] = // ...
 ```
 
-All input for a template must be satisfied, otherwise you'll get an
+All input for a component must be satisfied, otherwise you'll get an
 error.
 
 Events are binded a bit differently. They can't be binded to constants.
-Only to a template parameter (argument or event) or to a view handlers
+Only to a component parameter (argument or event) or to a view handlers
 property:
 
 ```html
-<my_template [arg1]={..} [arg2]={..} (event1)={..}/>
+<my_component [arg1]={..} [arg2]={..} (event1)={..}/>
 ```
 
-Additionally, all templates have a particular property called `class`
+Additionally, all components have a particular property called `class`
 which is the only one where style class symbol can be used.
 
 Parameters can be set to the following object types:
@@ -252,13 +252,13 @@ Parameters can be set to the following object types:
 But can't be set to symbols that are:
 
 * Views
-* Template
+* Component
 * Images
 * Fonts
 
-#### Using parameters within the template
+#### Using parameters within the component
 
-Parameters can be used to feed other template parameters
+Parameters can be used to feed other component parameters
 and also a few more other place such as:
 
 * Text content:
@@ -269,27 +269,27 @@ Hello {name} !
 
 * As input to other parameters.
 
-#### Template children
+#### Component children
 
-As you might expect, when using a template you can add
+As you might expect, when using a component you can add
 children to it:
 
 ```html
-<my_template>
+<my_component>
     Children here!
-</my_template>
+</my_component>
 ```
 
-This will be rejected if `my_template` does not specify
+This will be rejected if `my_component` does not specify
 where those children should go.
 
 Here is how you do:
 
 ```jsx
-template my_template = <select:children />;
+component my_component = <select:children />;
 ```
 
-This will insert within `my_template` all children within
+This will insert within `my_component` all children within
 it.
 
 We plan to support the following kind of insertion:
@@ -308,10 +308,10 @@ We plan to support the following kind of insertion:
 > Question: Do we want to allow "queries" on the type of those
 >           children? Like filtering children that are TextNode, etc..
 
-### Global templates
+### Global components
 
-Many templates are defined by oil and are internal to oil.
-They are handling differently than the other templates.
+Many components are defined by oil and are internal to oil.
+They are handling differently than the other components.
 Here is the list:
 
 * `group`: Does nothing, just a valid name to group elements.
@@ -319,16 +319,16 @@ Here is the list:
 * `text_input`: Can receive user text input and update a model property.
 * `check_box`: Can receive focus and update a logical model property.
 * `progress_bar`: Show progress.
-* `if`: A control template (see below)
-* `for`: A control template (see below)
-* `switch`: A control template (see below)
+* `if`: A control component (see below)
+* `for`: A control component (see below)
+* `switch`: A control component (see below)
 
 For more details see the
-[global templates list](../docs/languages_reference/tag_list).
+[global components list](../docs/languages_reference/tag_list).
 
 ### More control with `if`, `for`, `switch`
 
-Sometime, you want to control what template are displayed
+Sometime, you want to control what component are displayed
 when a specific condition is met. This is the role solved
 by `if` and  `switch`.
 
@@ -423,7 +423,7 @@ So far, classes looks pretty limited as they mainly express static
 visual constrains on the style. So how can we express more complex
 visual?
 
-First, classes can also be parameterize like template. Here is an
+First, classes can also be parameterize like component. Here is an
 example:
 
 ```css
@@ -537,7 +537,7 @@ part of the model and does not make sense to be stored there.
 A typical example would be formating a value into a percentage or
 more generally performing a basic mathematical operation.
 
-But it can also be doing some renaming to match a template
+But it can also be doing some renaming to match a component
 requirements.
 
 Additionally when designing a UI, it is quite useful to have fake

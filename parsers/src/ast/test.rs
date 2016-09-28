@@ -34,16 +34,16 @@ fn test_ast_package_should_collect_all_import() {
 }
 
 #[test]
-fn test_ast_template_with_text_child() {
-    let template = r#"template test = Hello!;"#;
-    let package = parse_grammar(template).unwrap();
+fn test_ast_component_with_text_child() {
+    let component = r#"component test = Hello!;"#;
+    let package = parse_grammar(component).unwrap();
     assert_eq!(package.items.len(), 1);
-    if let Item::Template(ref template) = package.items[0] {
-        assert_eq!(template.exported, false);
-        assert_eq!(template.name, "test");
-        assert_eq!(template.arguments.len(), 0);
-        assert_eq!(template.events.len(), 0);
-        if let NodeKind::Text { ref content } = template.nodes[0].kind {
+    if let Item::Component(ref component) = package.items[0] {
+        assert_eq!(component.exported, false);
+        assert_eq!(component.name, "test");
+        assert_eq!(component.arguments.len(), 0);
+        assert_eq!(component.events.len(), 0);
+        if let NodeKind::Text { ref content } = component.nodes[0].kind {
             assert_eq!(content, "Hello!");
         } else {
             assert!(false);

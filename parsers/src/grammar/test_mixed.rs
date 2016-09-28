@@ -2,7 +2,7 @@ use super::parse_grammar;
 
 
 #[test]
-fn test_mixed_style_template() {
+fn test_mixed_style_component() {
     let view = r#"
     // Here material-oil is one file.
     import {progress_bar} from 'material-oil';
@@ -14,11 +14,11 @@ fn test_mixed_style_template() {
       background_color: #FFFFFF;
     }
 
-    // This template is local to this class
-    template local_btn = <button class=local_class><select:children /></button>;
+    // This component is local to this class
+    component local_btn = <button class=local_class><select:children /></button>;
 
     // ui_element is exported and can be used elsewhere
-    export template ui_element [name, progress] =
+    export component ui_element [name, progress] =
       <group>
         <local_btn>Hello {name}</local_btn>
         <d>

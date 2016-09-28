@@ -13,7 +13,7 @@ Errors can only be caused by:
 * Valid style value (number + unit)
 * Image and font special import syntax.
 * Special property like `background-image` or `font`.
-* Template, View and Class definition.
+* Component, View and Class definition.
 
 ## Second pass: `import`
 
@@ -39,7 +39,7 @@ We want to ensure that all symbols are reachable. We can also
 error when a symbol hasn't been defined or hasn't been imported
 but it exists within an other import.
 
-The harder part of this phase is with template / view. They're the
+The harder part of this phase is with component / view. They're the
 ones using a lot of symbols.
 
 For this phase, additional symbols are added. Typically,
@@ -73,7 +73,7 @@ Once we know that all symbols are reachable we make sure that
 where they are used, they have the correct type.
 
 For instance a style symbol can only be used in a `class` property
-or as argument to another template but not as a template.
+or as argument to another component but not as a component.
 
 ### Style properties.
 

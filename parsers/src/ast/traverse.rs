@@ -6,7 +6,7 @@ pub trait PackageVisitor {
     fn visit_view(&mut self, item: &mut View);
     fn visit_class(&mut self,  item: &mut Class);
     fn visit_datatype(&mut self,  item: &mut DataType);
-    fn visit_template(&mut self,  item: &mut Template);
+    fn visit_component(&mut self,  item: &mut Component);
     fn visit_node(&mut self, item: &mut Node);
 }
 
@@ -28,7 +28,7 @@ fn traverse_item<T: PackageVisitor>(item: &mut Item, visitor: &mut T) {
         &mut Item::View(ref mut item) => traverse_view(item, visitor),
         &mut Item::Class(ref mut item) => traverse_class(item, visitor),
         &mut Item::DataType(ref mut item) => traverse_datatype(item, visitor),
-        &mut Item::Template(ref mut item) => traverse_template(item, visitor),
+        &mut Item::Component(ref mut item) => traverse_component(item, visitor),
     }
 }
 
@@ -45,8 +45,8 @@ fn traverse_datatype<T: PackageVisitor>(item: &mut DataType, visitor: &mut T) {
     visitor.visit_datatype(item);
 }
 
-fn traverse_template<T: PackageVisitor>(item: &mut Template, visitor: &mut T) {
-    visitor.visit_template(item);
+fn traverse_component<T: PackageVisitor>(item: &mut Component, visitor: &mut T) {
+    visitor.visit_component(item);
     for item in item.nodes.iter_mut() {
         traverse_node(item, visitor);
     }
@@ -69,7 +69,7 @@ mod test {
     struct TestVisitor {
         node_count: usize,
         import_count: usize,
-        template_count: usize,
+        component_count: usize,
     }
 
     impl PackageVisitor for TestVisitor {
@@ -86,8 +86,8 @@ mod test {
         fn visit_datatype(&mut self, item: &mut DataType) {
             assert!(false);
         }
-        fn visit_template(&mut self, item: &mut Template) {
-            self.template_count += 1;
+        fn visit_component(&mut self, item: &mut Component) {
+            self.component_count += 1;
             assert_eq!(item.name, "el");
         }
         fn visit_node(&mut self, item: &mut Node) {
@@ -117,7 +117,7 @@ mod test {
     fn test_traverse_package() {
         let test = r#"
         import 'some-import';
-        template el = <a>some text<b><c></c></b><d></d></a>;
+        component el = <a>some text<b><c></c></b><d></d></a>;
         .btn {
             prop: 4 px;
             prop: 3 px if true;
@@ -128,6 +128,6 @@ mod test {
         traverse(&mut package, &mut visitor);
         assert_eq!(visitor.node_count, 5);
         assert_eq!(visitor.import_count, 1);
-        assert_eq!(visitor.template_count, 1);
+        assert_eq!(visitor.component_count, 1);
     }
 }

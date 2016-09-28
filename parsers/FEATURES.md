@@ -6,7 +6,7 @@
 | ----------------------- | ----------------------- | ------------------ |
 | Import lookup rule      |           *TBD*         |                    |
 | Parse view              |          **Done**       |                    |
-| Parse template          |          **Done**       |                    |
+| Parse component          |          **Done**       |                    |
 | Parse class             |          **Done**       |                    |
 | Type-check              |           *TBD*         |                    |
 | Symbol resolution       |           *TBD*         |                    |
@@ -16,7 +16,7 @@
 | Style calculation       |           *TBD*         |                    |
 | Keyboard Focus          |           *TBD*         |                    |
 
-## Template
+## Component
 
 | Feature name            | Internal Representation | End2end            |
 | ----------------------- | ----------------------- | ------------------ |

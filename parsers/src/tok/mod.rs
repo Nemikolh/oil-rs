@@ -98,7 +98,7 @@ pub enum Tok<'input> {
     Import,
     From,
     View,
-    Template,
+    Component,
     DataType,
     Export,
     New,
@@ -163,7 +163,7 @@ pub struct Tokenizer<'input> {
 enum TokState {
     Normal,
     WaitingForEq,
-    InTemplateOrView,
+    InComponentOrView,
     InTag,
     InBrace,
 }
@@ -175,7 +175,7 @@ const KEYWORDS: &'static [(&'static str, Tok<'static>)] = &[
     ("export", Export),
     ("from", From),
     ("view", View),
-    ("template", Template),
+    ("component", Component),
     ("datatype", DataType),
     ("new", New),
     ("if", If),
@@ -199,13 +199,13 @@ impl<'input> Tokenizer<'input> {
 
     #[inline]
     fn not_text(&self) -> bool {
-        self.state != TokState::InTemplateOrView
+        self.state != TokState::InComponentOrView
     }
 
     #[inline]
-    fn go_in_template(&mut self) -> bool {
+    fn go_in_component(&mut self) -> bool {
         if self.state == TokState::WaitingForEq {
-            self.state = TokState::InTemplateOrView;
+            self.state = TokState::InComponentOrView;
             true
         } else {
             false
@@ -215,13 +215,13 @@ impl<'input> Tokenizer<'input> {
     #[inline]
     fn go_out_of_tag(&mut self) {
         if self.state == TokState::InTag {
-            self.state = TokState::InTemplateOrView;
+            self.state = TokState::InComponentOrView;
         }
     }
 
     #[inline]
     fn go_in_tag(&mut self) {
-        if self.state == TokState::InTemplateOrView {
+        if self.state == TokState::InComponentOrView {
             self.state = TokState::InTag;
         }
     }
@@ -229,8 +229,8 @@ impl<'input> Tokenizer<'input> {
     #[inline]
     fn go_in_brace(&mut self) {
         match &self.state {
-            &TokState::InTemplateOrView => {
-                self.prev_state = TokState::InTemplateOrView;
+            &TokState::InComponentOrView => {
+                self.prev_state = TokState::InComponentOrView;
                 self.state = TokState::InBrace;
             }
             &TokState::InTag => {
@@ -248,15 +248,15 @@ impl<'input> Tokenizer<'input> {
                 self.state = TokState::InTag
             }
             (_, &TokState::InBrace) => {
-                self.state = TokState::InTemplateOrView;
+                self.state = TokState::InComponentOrView;
             }
             _ => (),
         }
     }
 
     #[inline]
-    fn go_out_of_template(&mut self) {
-        if self.state == TokState::InTemplateOrView {
+    fn go_out_of_component(&mut self) {
+        if self.state == TokState::InComponentOrView {
             self.state = TokState::Normal;
         }
     }
@@ -301,7 +301,7 @@ impl<'input> Tokenizer<'input> {
                     Some(Ok((idx0, RightBrace, idx0+1)))
                 }
                 Some((idx0, ';')) => {
-                    self.go_out_of_template();
+                    self.go_out_of_component();
                     self.bump();
                     Some(Ok((idx0, Semi, idx0+1)))
                 }
@@ -390,7 +390,7 @@ impl<'input> Tokenizer<'input> {
                     Some(Ok((start, DotId(StrView::from(self.text, start, end)), end)))
                 }
                 Some((idx0, '=')) if self.not_text() => {
-                    match (self.bump(), self.go_in_template()) {
+                    match (self.bump(), self.go_in_component()) {
                         (Some((idx1, '=')), false) => {
                             self.bump();
                             Some(Ok((idx0, EqualsEquals, idx1+1)))
@@ -448,7 +448,7 @@ impl<'input> Tokenizer<'input> {
                     continue;
                 }
                 Some((idx0, _)) => {
-                    if self.state == TokState::InTemplateOrView {
+                    if self.state == TokState::InComponentOrView {
                         return Some(match self.take_until(|c| c == ';' || c == '<' || c == '{') {
                             Some(idx1) => {
                                 let text: &'input str = &self.text[idx0..idx1];
@@ -513,7 +513,7 @@ impl<'input> Tokenizer<'input> {
                     .next()
                     .unwrap_or_else(|| Id(StrView::from(self.text, start, end)));
 
-        if tok == Template || tok == View {
+        if tok == Component || tok == View {
             self.state = TokState::WaitingForEq;
         }
 

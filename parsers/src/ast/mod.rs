@@ -39,7 +39,7 @@ pub enum Components {
 pub enum Item {
     View(View),
     DataType(DataType),
-    Template(Template),
+    Component(Component),
     Class(Class),
 }
 
@@ -164,20 +164,20 @@ pub enum Unit {
 }
 
 // =================================
-//          AST: Template
+//          AST: Component
 //
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Template {
-    /// Is this template visible outside of this Package?
+pub struct Component {
+    /// Is this component visible outside of this Package?
     pub exported: bool,
-    /// Name of the template
+    /// Name of the component
     pub name: String,
-    /// Arguments name accepted by the template
+    /// Arguments name accepted by the component
     pub arguments: Vec<String>,
-    /// Events accepted by the template
+    /// Events accepted by the component
     pub events: Vec<String>,
-    /// Children of this template
+    /// Children of this component
     pub nodes: Vec<Node>,
 }
 
@@ -212,10 +212,10 @@ pub enum NodeKind {
         /// The class argument attaching style properties
         /// to that node.
         class: Option<AnonymousClassOrIdent>,
-        /// The arguments that are passed to the template
+        /// The arguments that are passed to the component
         /// used to instantiate that node.
         arguments: Vec<(String, ObjectValue)>,
-        /// The events passed to the template used to
+        /// The events passed to the component used to
         /// instantiate that node.
         events: Vec<(String, String)>,
     },
