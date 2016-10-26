@@ -20,9 +20,9 @@ fn test_mixed_style_component() {
     // ui_element is exported and can be used elsewhere
     export component ui_element [name, progress] =
       <group>
-        <local_btn>Hello {name}</local_btn>
+        <local_btn>Hello {{name}}</local_btn>
         <d>
-          <progress_bar [value]=progress></progress_bar>
+          <progress_bar [value]={progress}></progress_bar>
           <logo></logo>
         </d>
       </group>;

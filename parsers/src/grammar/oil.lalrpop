@@ -2,7 +2,9 @@ use tok::{self, Tok};
 use std::str::FromStr;
 use ast::*;
 use lalrpop_util::ParseError;
+use lalrpop_intern::{intern, InternedString};
 use std::collections::HashMap;
+
 
 grammar<'input>;
 
@@ -16,46 +18,37 @@ pub ui_package: Package = {
 };
 
 import: Import = {
-    "import" <c:components> "from" <p:path> ";" => {
+    "import" <s:import_symbols> "from" <lo:@L> <p:path> <hi:@R> ";" => {
         Import {
-            components: c,
-            path: p.to_string(),
+            span: Span(lo, hi),
+            symbols: s,
+            package: SubPackage::UnresolvedPath(intern(p)),
         }
     },
-    "import" <p:path> ";" => {
+    "import" <lo:@L> <p:path> <hi:@R> ";" => {
         Import {
-            components: Components::All,
-            path: p.to_string(),
+            span: Span(lo, hi),
+            symbols: ImportSymbols::All,
+            package: SubPackage::UnresolvedPath(intern(p)),
         }
     },
 };
 
-components: Components = {
-    "*" => Components::All,
-    "{" <v:comma<ident>> "}" => {
-        Components::Only(v.into_iter().map(|s| s.to_string()).collect())
-    },
-    <lo:@L> <font_or_img:ident> =>? {
-        if font_or_img == "$font" {
-            Ok(Components::Font)
-        } else if font_or_img == "$img" {
-            Ok(Components::Img)
-        } else {
-            Err(ParseError::User {
-                error: tok::Error {
-                    location: lo,
-                    code: tok::ErrorCode::OnlyFontOrImg
-                }
-            })
-        }
-    },
+import_symbols: ImportSymbols = {
+    "*" => ImportSymbols::All,
+    "{" <v:comma<identspan>> "}" => ImportSymbols::Only(v),
+    <id:identspan> => ImportSymbols::AllAsIdent(id),
 };
 
 component_or_style_or_view: Item = {
     component => Item::Component(<>),
     style => Item::Class(<>),
     view => Item::View(<>),
-    datatype => Item::DataType(<>),
+};
+
+identspan: Ident = <lo:@L> <i:ident> <hi:@R> => Ident {
+    span: Span(lo, hi),
+    name: intern(i),
 };
 
 path: &'input str = {
@@ -80,7 +73,7 @@ component: Component = {
     <args:component_args?> <events:trigg_events?> "=" <ns:node*> ";" => {
         Component {
             exported: ex.is_some(),
-            name: n.to_string(),
+            name: intern(n),
             arguments: args.unwrap_or(vec![]),
             events: events.unwrap_or(vec![]),
             nodes: ns,
@@ -90,20 +83,18 @@ component: Component = {
 
 export: () = "export" => ();
 
-component_args: Vec<String> = {
-    <arg:ident> => vec![arg.to_string()],
-    "[" <args:comma<ident>> "]" =>
-        args.into_iter().map(|s| s.to_string()).collect(),
+component_args: Vec<Ident> = {
+    <arg:identspan> => vec![arg],
+    "[" <comma<identspan>> "]" => <>,
 };
 
-trigg_events: Vec<String> = {
+trigg_events: Vec<Ident> = {
     "->" <evs:events> => evs,
 };
 
-events: Vec<String> = {
-    <ev:ident> => vec![ev.to_string()],
-    "(" <evs:comma<ident>> ")" =>
-        evs.into_iter().map(|s| s.to_string()).collect(),
+events: Vec<Ident> = {
+    <ev:identspan> => vec![ev],
+    "(" <comma<identspan>> ")" => <>,
 };
 
 node: Node = {
@@ -120,7 +111,7 @@ node: Node = {
                 span: Span(lo, hi),
                 children: children,
                 kind: NodeKind::Tag {
-                    name: tag_open.to_string(),
+                    name: intern(tag_open),
                     class: cl,
                     arguments: args,
                     events: ev,
@@ -135,34 +126,6 @@ node: Node = {
             })
         }
     },
-    // Selection
-    "<" <selo:@L> <select:ident> ":" <qulo:@L> <query:ident> <hi:@R> "/>" =>? {
-        if select == "select" {
-            if query == "children" {
-                Ok(Node {
-                    span: Span(selo, hi),
-                    children: vec![],
-                    kind: NodeKind::Query {
-                        kind: QueryKind::Children
-                    }
-                })
-            } else {
-                Err(ParseError::User {
-                    error: tok::Error {
-                        location: qulo,
-                        code: tok::ErrorCode::InvalidQuery,
-                    }
-                })
-            }
-        } else {
-            Err(ParseError::User {
-                error: tok::Error {
-                    location: selo,
-                    code: tok::ErrorCode::InvalidSelect,
-                }
-            })
-        }
-    },
     node_text,
 };
 
@@ -171,13 +134,13 @@ node_text: Node = {
     <lo:@L> <t:"TextNode"> <hi:@R> => Node {
         span: Span(lo, hi),
         children: vec![],
-        kind: NodeKind::Text { content: t.to_string() },
+        kind: NodeKind::Text { content: intern(t) },
     },
     // A text binding
-    <lo:@L> "{" <p:property> "}" <hi:@R> => Node {
+    <lo:@L> "{" "{" <p:property> "}" "}" <hi:@R> => Node {
         span: Span(lo, hi),
         children: vec![],
-        kind: NodeKind::Binding { property: p.to_string() },
+        kind: NodeKind::Binding { property: intern(p.as_str()) },
     },
 };
 
@@ -196,16 +159,24 @@ class: AnonymousClassOrIdent =
     };
 
 class_value: AnonymousClassOrIdent = {
-    <id:ident> => AnonymousClassOrIdent::Ident(id.to_string()),
+    <id:ident> => AnonymousClassOrIdent::Ident(intern(id)),
     <ac:anonymous_class> => AnonymousClassOrIdent::AnCls(ac),
 };
 
-node_args: (String, ObjectValue) = {
-    "[" <i:ident> "]" "=" <a:object_as_arg_value> => (i.to_string(), a),
+node_args: (Ident, ObjectValue) = {
+    "[" <i:identspan> "]" "=" "{" <a:object_as_arg_value> "}" => (i, a),
 };
 
-node_events: (String, String) = {
-    "(" <i:ident> ")" "=" <p:property> => (i.to_string(), p.to_string()),
+node_events: (Ident, ()) = {
+    "(" <i:identspan> ")" "=" "{" <p:eventchain> "}" => (i, p),
+};
+
+// =================================
+//          Event chain
+//
+
+eventchain: () = {
+    // TODO
 };
 
 // =================================
@@ -221,12 +192,15 @@ anonymous_class: AnonymousClass = {
 };
 
 style: Class = {
-    <ex:export?> <name:"DotId"> <args:arguments?> "{"
+    <ex:export?> <lo:@L> <name:"DotId"> <hi:@R> <args:arguments?> "{"
         <props:style_property_or_include*>
     "}" => {
         Class {
             exported: ex.is_some(),
-            name: (&*name)[1..].to_string(),
+            name: Ident {
+                span: Span(lo, hi),
+                name: intern(&(&*name)[1..]),
+            },
             arguments: args.unwrap_or(vec![]),
             properties: props,
         }
@@ -238,28 +212,29 @@ style_property_or_include: RawPropertyOrInclude = {
         RawPropertyOrInclude::RawProperty((prop.0, StyleValueCond { prop: prop.1, cond: cond })),
     <incl:style_include>  <cond:style_condition?> ";" =>
         RawPropertyOrInclude::Include(IncludeCond { incl: incl, cond: cond }),
+    "&" ":" <i:identspan> "{" <props:style_property_or_include> "}" => unimplemented!(),
 };
 
 style_include: Include = {
-    <name:"DotId"> <args:arguments?> => {
+    <lo:@L> <name:"DotId"> <hi:@R> <args:arguments?> => {
         Include {
-            name: (&*name)[1..].to_string(),
+            name: Ident { name: intern(&(&*name)[1..]) span: Span(lo, hi) },
             arguments: args.unwrap_or(vec![]),
         }
     },
 };
 
-style_property: (String, StyleValue) = {
-    <i:ident> ":" <s:style_value> => (i.to_string(), s),
+style_property: (InternedString, StyleValue) = {
+    <i:ident> ":" <s:style_value> => (intern(i), s),
 };
 
 style_condition: Box<Expr> = {
-    "if" <boolean_expression> => <>,
+    "@if" <boolean_expression> => <>,
 };
 
 style_value: StyleValue = {
-    <s:"StringLiteral"> => StyleValue::Keyword(s.to_string()),
-    <h:"Hex"> => StyleValue::Hex(h.to_string()),
+    <s:"StringLiteral"> => StyleValue::Keyword(intern(s)),
+    <h:"Hex"> => StyleValue::Hex(intern(h)),
     <le:@L> <e:expression> <li:@L> <prop:img_view_or_unit?> =>? {
         match prop {
             Some(ImgViewOrUnit::ImgView(sub_img)) => {
@@ -284,7 +259,7 @@ style_value: StyleValue = {
                         .position(|&x| x.0.map(|a| a == "h").unwrap_or(false))
                         .unwrap_or(3);
                     Ok(StyleValue::Img {
-                        ident: access.to_string(),
+                        ident: intern(access),
                         view_x: sub_img.get(x_pos).map(|&x| x.1),
                         view_y: sub_img.get(y_pos).map(|&x| x.1),
                         view_w: sub_img.get(w_pos).map(|&x| x.1),
@@ -336,15 +311,14 @@ img_prop: (Option<&'input str>, f32) = {
 };
 
 // =================================
-//          DataType
+//          Constants
 //
 
-datatype: DataType = {
-    <e:export?> "datatype" <n:ident> <a:arguments?> "=" <o:object> ";" => DataType {
+constants: ConstValue = {
+    <e:export?> "const" <n:ident> "=" <o:object> ";" => ConstValue {
         exported: e.is_some(),
-        name: n.to_string(),
+        name: intern(n),
         properties: o,
-        arguments: a.unwrap_or(vec![]),
     },
 };
 
@@ -354,7 +328,7 @@ datatype: DataType = {
 
 view: View = {
     "view" <i:ident> <args:view_args> "=" <n:node> ";" => View {
-        name: i.to_string(),
+        name: intern(i),
         model_name: args.0,
         handlers_name: args.1,
         node: n,
@@ -362,7 +336,7 @@ view: View = {
 };
 
 view_args: (String, String) = {
-    "(" <m:ident> "," <h:ident> ")" => (m.to_string(), h.to_string()),
+    "(" <m:ident> "," <h:ident> ")" => (intern(m), intern(h)),
 };
 
 // =================================
@@ -382,16 +356,16 @@ comma<T>: Vec<T> =
 // This is needed to avoid a problem with expression
 // that need to be wrapped
 object_as_arg_value: ObjectValue = {
-    <s:"StringLiteral"> => ObjectValue::StrLit(s.to_string()),
+    <s:"StringLiteral"> => ObjectValue::StrLit(intern(s)),
     <p:property> =>
-        ObjectValue::Expr(Box::new(Expr::VarAccess(p.to_string()))),
+        ObjectValue::Expr(Box::new(Expr::VarAccess(intern(p)))),
     "{" <exp:expression> "}" => ObjectValue::Expr(exp),
     "{" <entries:comma<object_entry>> "}" =>
         ObjectValue::Props(entries.into_iter().collect()),
 };
 
 object: ObjectValue = {
-    <s:"StringLiteral"> => ObjectValue::StrLit(s.to_string()),
+    <s:"StringLiteral"> => ObjectValue::StrLit(intern(s)),
     <exp:expression> => ObjectValue::Expr(exp),
     "{" <entries:comma<object_entry>> "}" =>
         ObjectValue::Props(entries.into_iter().collect()),
@@ -438,9 +412,7 @@ exponentiation: Box<Expr> = {
 primary: Box<Expr> = {
     "true" => Box::new(Expr::Boolean(true)),
     "false" => Box::new(Expr::Boolean(false)),
-    "new" <i:ident> <a:arguments_obj?> =>
-        Box::new(Expr::New(i.to_string(), a.unwrap_or(vec![]))),
-    property => Box::new(Expr::VarAccess(<>.to_string())),
+    property => Box::new(Expr::VarAccess(intern(<>))),
     number => Box::new(Expr::Number(<>)),
     "(" <expression> ")" => <>,
     "!" <primary> => Box::new(Expr::Not(<>)),
@@ -450,9 +422,8 @@ arguments_obj: Vec<ObjectValue> = {
     "(" <comma<object>> ")" => <>,
 };
 
-arguments: Vec<String> = {
-    "(" <args:comma<ident>> ")" =>
-        args.into_iter().map(|s| s.to_string()).collect(),
+arguments: Vec<Ident> = {
+    "(" comma<identspan> ")",
 };
 
 sign: Sign = {
@@ -492,13 +463,16 @@ extern {
         "import" => Tok::Import,
         "from" => Tok::From,
         "view" => Tok::View,
+        "const" => Tok::Const,
+        "let" => Tok::Let,
         "component" => Tok::Component,
-        "datatype" => Tok::DataType,
         "export" => Tok::Export,
-        "new" => Tok::New,
-        "if" => Tok::If,
         "true" => Tok::True,
         "false" => Tok::False,
+
+        // Style specific tokens
+        "@if" => Tok::If,
+        "&" => Tok::Ampersand,
 
         // Special keywords accompanied by a series of
         // uninterpreted strings representing path

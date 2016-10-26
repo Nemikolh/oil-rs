@@ -29,8 +29,6 @@ pub enum ErrorCode {
     InvalidVarName,
     InvalidUnit,
     InvalidRange,
-    InvalidQuery,
-    InvalidSelect,
 }
 
 fn error<T>(c: ErrorCode, l: usize) -> Result<T,Error> {
@@ -99,9 +97,9 @@ pub enum Tok<'input> {
     From,
     View,
     Component,
-    DataType,
     Export,
-    New,
+    Let,
+    Const,
     If,
     True,
     False,
@@ -148,6 +146,7 @@ pub enum Tok<'input> {
     Star,
     Colon,
     Comma,
+    Ampersand,
 }
 
 pub struct Tokenizer<'input> {
@@ -176,9 +175,9 @@ const KEYWORDS: &'static [(&'static str, Tok<'static>)] = &[
     ("from", From),
     ("view", View),
     ("component", Component),
-    ("datatype", DataType),
-    ("new", New),
-    ("if", If),
+    ("let", Let),
+    ("const", Const),
+    ("@if", If),
     ("true", True),
     ("false", False),
     ];
@@ -404,7 +403,7 @@ impl<'input> Tokenizer<'input> {
                             self.bump();
                             Some(Ok((idx0, And, idx1+1)))
                         }
-                        _ => Some(error(UnrecognizedToken, idx0)),
+                        _ => Some(Ok((idx0, Ampersand, idx0+1))),
                     }
                 }
                 Some((idx0, '|')) if self.not_text() => {

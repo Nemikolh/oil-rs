@@ -1,20 +1,22 @@
 
 [package]
 name = "oil"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Nemikolh <joan.varvenne@gmail.com>", "Vaelden <maugan.villatel@gmail.com>"]
 homepage = "http://oil-lang.github.io/"
 repository = "https://github.com/oil-lang/oil-rs"
 readme = "README.md"
 license = "MIT"
 keywords = ["ui", "opengl", "gamedev"]
-description = "User interface library oriented for games. It includes user interface languages."
+description = "UI library for games. This package contains the client depedency. This is also the package you can `cargo install` to get access to the compiler on the command line."
 exclude = [
     ".travis.yml",
     "examples/*",
     "docs/*",
     "mkdocs.yml"
 ]
+
+[workspace]
 
 [profile.release]
 opt-level = 3
@@ -25,24 +27,23 @@ debug-assertions = false
 
 [dependencies]
 bitflags = "0.4.0"
-image = "0.6.1"
-cgmath = "0.7.0"
+glium = "0.14.0"
+image = "0.10.0"
+cgmath = "0.9.1"
+log = "0.3.6"
 num = "0.1.30"
 
 [dependencies.oil_parsers]
 path = "./parsers"
-version = "=0.2.0"
+version = "=0.3.0"
 
-[dependencies.oil_shared]
-path = "./shared"
-version = "=0.2.0"
+[dependencies.oil_repr]
+path = "./repr"
+version = "=0.3.0"
 
 [dependencies.oil_databindings]
 path = "./data_bindings"
-version= "=0.2.0"
-
-[dependencies.glium]
-version = "0.13.5"
+version= "=0.3.0"
 
 [dev-dependencies]
-clock_ticks = "*"
+# clock_ticks = "*"

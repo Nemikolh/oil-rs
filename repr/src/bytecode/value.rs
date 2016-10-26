@@ -42,6 +42,10 @@ impl Value {
         self.0 & !(QNAN | SIGN_BIT)
     }
 
+    pub fn raw_bits(self) -> u64 {
+        self.0
+    }
+
     pub fn as_var_access(self) -> Result<u64, ()> {
         if self.0 & (QNAN | SIGN_BIT) == (QNAN | SIGN_BIT) {
             Ok(self.0 & !(QNAN | SIGN_BIT))

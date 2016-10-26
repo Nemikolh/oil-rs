@@ -1,0 +1,50 @@
+import $btn from './btn.png';
+import $item from './btn.png';
+
+const $btn_notselected = $btn[0, 132, 400, 40];
+const $btn_selected = $btn[0, 172, 400, 40];
+
+const $item_selected = $item[2, 46, 44, 44];
+const $item_notselected = $item[2, 2, 40, 40];
+
+
+export .shop {
+    width: 160px;
+    margin: 10px;
+}
+
+export .inventory {
+    width: 160px;
+    margin: 10px;
+}
+
+export .item {
+    height: 80px;
+    width: 80px;
+    background_image: $item_notselected;
+    background_image-rule: "fit";
+
+    &:focus {
+        background_image: $item_selected;
+    }
+}
+
+export .single_line {
+    width: "auto";
+}
+
+export .center {
+    margin_left: "expand";
+    margin_right: "expand";
+}
+
+export .btn {
+    width: 640px;
+    height: 80px;
+    background_image: $btn_notselected;
+    background_image-rule: "fit";
+
+    &:focus {
+        background_image: $btn_selected;
+    }
+}

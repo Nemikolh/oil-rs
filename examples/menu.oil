@@ -1,0 +1,60 @@
+import $btn from './btn.png';
+import {quitgame, ACTION_QUIT, ACTION_PLAY} from './menu.reducers';
+
+const $btn_notselected = $btn[0, 132, 400, 40];
+const $btn_selected = $btn[0, 172, 400, 40];
+
+// This should be a comment
+.btn_groups() {
+    margin_left: "expand";
+    margin_right: "expand";
+}
+
+.btn_one_line() {
+    width: "auto";
+    height: 40px;
+    background_image: $btn_notselected;
+    background_image_rule: "fit";
+
+    & :focus {
+        background_image: $btn_selected;
+    }
+}
+
+.btn() {
+    width: 200px;
+    height: 40px;
+    background_image: $btn_notselected;
+    background_image_rule: "fit";
+
+    & :focus {
+        background_image: $btn_selected;
+    }
+}
+
+component friend[name, status] -> () = {{name}} is {{status}};
+
+view play(store, router) {
+
+    <button class={}></button>
+}
+
+view main(store, router) {
+    let player = store.player;
+    store.register(quitgame);
+
+    <group>
+        Welcome {{player.name}} to OIL!
+        <group class={btns_group}>
+            <button class={btn_one_line} (click)={router.goto_view(play)}>Play</button>
+            <button class={btn_one_line} (click)={store.dispatch(Action::QUIT)}>Options</button>
+            <button class={btn}          (click)={store.dispatch(Action::QUIT)}>Foo</button>
+            <button class={btn}          (click)={store.dispatch(Action::QUIT)}>Bar</button>
+            <button class={btn_one_line}>More Options</button>
+            <button class={btn_one_line} (click)={store.dispatch(Action::QUIT)}>Quit</button>
+        </group>
+        <repeat #iter={player.friends}>
+            <friend [name]={iter.name} [status]={iter.status} />
+        </repeat>
+    </group>
+}

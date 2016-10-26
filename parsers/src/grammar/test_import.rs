@@ -44,15 +44,15 @@ fn test_oil_import_image1() {
 }
 
 #[test]
-#[should_panic]
-fn test_oil_invalid_import_image2() {
-    let import = r#"import img from './logo.png';"#;
+fn test_oil_import_image2() {
+    let import = r#"import logo from './logo.png';"#;
     parse_grammar(import).unwrap();
 }
 
 #[test]
 fn test_oil_valid_module_import_that_look_like_image_import() {
-    // Not recommended but should be valid.
+    // Should be rejected by later pass but is accepted
+    // by the parser.
     let import = r#"import {img} from './logo.png';"#;
     parse_grammar(import).unwrap();
 }
@@ -64,8 +64,7 @@ fn test_oil_import_font() {
 }
 
 #[test]
-#[should_panic]
-fn test_oil_invalid_import_font2() {
+fn test_oil_import_font2() {
     let import = r#"import font from 'material-oil';"#;
     parse_grammar(import).unwrap();
 }

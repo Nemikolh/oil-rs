@@ -1,18 +1,20 @@
 # oil-rs [![Build Status](https://travis-ci.org/oil-lang/oil-rs.svg?branch=master)](https://travis-ci.org/oil-lang/oil-rs)
 
-Oil is a graphical user interface library for Rust with video games in mind.
-It is designed around three languages to describe your user interface:
+Oil is a graphical user interface library for Rust with video games in mind with
+a unique language to describe the UI.
 
- * A markup language
- * A style language
- * A dependency description language
+It is heavily inpired of JavaScript / HTML / CSS and modern frameworks used to
+build UIs. Of course there's a non goal of redoing a web browser here.
+That's not the point. We want to offer a small engine with similar capabilities
+while retaining performance and convenience.
 
-Now you've got it right? It definitely looks pretty similar to HTML and CSS.
-Of course there's a non goal of redoing a web browser here. That's not the point.
+Oil's goals are completely different from the one of a web browser engine such as
+[servo](https://github.com/servo/servo).
 
-This library's goals are completely different from a web browser engine such as [servo](https://github.com/servo/servo).
 The key idea behind familiarity is the ease of learning while bringing *(trying)* the good part
-from web development for game development with Rust.
+from web development for game development with Rust. We think that if can bring
+to UX and UI expert similar tooling for Games, we will be able to see much more
+interesting UI in games and offer more opportunities for UI/UX expert.
 
 Okay, now a few more things to keep in mind before getting started:
 
@@ -23,21 +25,33 @@ Okay, now a few more things to keep in mind before getting started:
 
 ## [Getting-started](http://oil-lang.github.io/#getting-started)
 
-Oil now work on Rust stable (1.6 as of writing). You only need to add the following
+Oil now work on Rust stable (1.13 as of writing). You only need to add the following
 to you `Cargo.toml` file:
 
 ```toml
 [dependencies]
-oil = "0.2.0"
+oil = "0.3.0"
 ```
 
 For a concrete example, you should have a look at the examples in the `examples/` folder.
 
 ## Roadmap
 
-This library does not allow to do many things right now. In the future, you'll have:
+This library does not allow to do many things right now. Here is a rough sketch
+of the planned roadmap:
 
-  * fonts support
-  * User events such as mouse/key
-  * Data-bindings
-  * Animations
+  * [ ] Language parser and stable AST.
+  * [ ] Syntax highlighters for Monaco and Vim.
+  * [ ] *Simple* Oil Language Server with Monaco plugin. *(It's okay if it does not fully work)*
+  * [ ] Flexbox.
+  * [ ] Transitions and animations keys.
+  * [ ] Observables.
+  * [ ] Rust codegen (Part 1) (only what's needed for observable and basic store)
+  * [ ] Proper text support.
+  * [ ] Text binding and property binding on the box model.
+  * [ ] Full `Store` support.
+  * [ ] Reducers.
+  * [ ] Background image.
+  * [ ] Fonts, font family and weight.
+  * [ ] Arbitrary texture binding from store.
+  * [ ] Custom shaders.

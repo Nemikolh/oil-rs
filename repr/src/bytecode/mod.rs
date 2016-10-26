@@ -3,9 +3,11 @@
 pub use self::value::Value;
 pub use self::value::NULL_VAL;
 pub use self::iter::InstrIter;
+pub use self::check::Error;
 
 mod value;
 mod iter;
+mod check;
 
 #[cfg(test)]
 mod tests;
@@ -20,16 +22,16 @@ const TAG_TRUE: u64 = 3;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Bytecode {
-    text: Vec<&'static str>,
+    text: Vec<String>,
     // Little endian encoding
     code: Vec<u8>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum OpCode {
-    // Constant stack push (f32)
+    // Constant stack push (f64)
     Const,
-    // Var access push (u32)
+    // Var access push (u64)
     VarAccess,
     // Unary operations
     Not,
@@ -50,6 +52,9 @@ pub enum OpCode {
     GreaterThan,
     LessThanOrEq,
     GreaterThanOrEq,
+    // Control flow operations
+    SkipnIfNZ,  // Skip n (u64) instructions if non zero
+    Ret,        // Return current stack value
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

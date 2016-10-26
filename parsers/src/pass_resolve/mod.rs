@@ -1,14 +1,11 @@
-use std::collections::HashSet;
-use ast::Package;
-
 
 pub type Error = ();
 
-pub fn pass_resolve_names(ast: &mut Package) -> Result<(), Error> {
-    // let mut imported_or_defined = HashSet::new();
+pub use self::symbols::pass_resolve_symbols;
+pub use self::paths::pass_resolve_packages_from_root;
 
-    Ok(())
-}
+mod symbols;
+mod paths;
 
 #[cfg(test)]
 mod test;

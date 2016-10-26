@@ -21,11 +21,11 @@ macro_rules! assert_err_code {
     );
 }
 
-#[test]
-fn test_error_import_img_or_font() {
-    let import = r#"import img from './logo.png';"#;
-    assert_err_code!(import, tok::ErrorCode::OnlyFontOrImg)
-}
+// #[test]
+// fn test_error_import_img_or_font() {
+//     let import = r#"import img from './logo.png';"#;
+//     assert_err_code!(import, tok::ErrorCode::OnlyFontOrImg)
+// }
 
 #[test]
 fn test_error_unmatchintag_in_component_or_view() {

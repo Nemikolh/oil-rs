@@ -5,7 +5,10 @@ extern crate phf;
 extern crate num;
 extern crate unicode_xid;
 extern crate lalrpop_util;
+extern crate lalrpop_intern;
 extern crate oil_repr;
+
+use std::io;
 
 #[cfg_attr(test, macro_use)]
 #[cfg(test)]
@@ -20,17 +23,12 @@ mod pass_resolve;
 
 
 use std::path::Path;
-use std::fs::File;
-use std::io;
-use std::io::Read;
-
+use pass_resolve::pass_resolve_packages_from_root;
 
 pub fn compile<P: AsRef<Path>>(input: P) -> Result<oil_repr::OilLibrary, CompileError> {
-    let mut f = try!(File::open(input.as_ref()));
-    let mut s = String::new();
-    try!(f.read_to_string(&mut s));
-    let mut ast = try!(grammar::parse_grammar(&s));
-    try!(pass_resolve::pass_resolve_names(&mut ast));
+    let program = try!(pass_resolve_packages_from_root(input));
+    // let mut ast = try!(grammar::parse_grammar(&s));
+    // try!(pass_resolve::pass_resolve_names(&mut ast));
     Ok(())
 }
 

@@ -10,8 +10,6 @@ fn main() {
 
     util::run_example(
         "oil - list example",
-        "./examples/list.markup",
-        "./examples/list.deps",
-        "./examples/list.style"
+        "./examples/list.oil"
     );
 }

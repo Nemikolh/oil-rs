@@ -10,8 +10,6 @@ fn main() {
 
     util::run_example(
         "oil - shop inventory example",
-        "./examples/shop_inventory.markup",
-        "./examples/shop_inventory.deps",
-        "./examples/shop_inventory.style"
+        "./examples/shop_inventory.oil"
     );
 }

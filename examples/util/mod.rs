@@ -10,15 +10,15 @@ use oil;
 use glutin;
 use clock_ticks;
 
-pub fn run_example(title: &str, markup_path: &str, deps_path: &str, style_path: &str) {
+pub fn run_example(title: &str, root_file: &str) {
 
     //////////////////////////////////////////////////////////////////////////////
     // oil related code
     //
     let mut library = {
-        let file = File::open(&Path::new(markup_path)).unwrap();
+        let file = File::open(&Path::new(root_file)).unwrap();
         let reader = BufReader::new(file);
-        oil::markup::parse(oil::StdOutErrorReporter, reader)
+        oil::parser::parse(oil::StdOutErrorReporter, reader)
     };
 
     library.resolve_templates();

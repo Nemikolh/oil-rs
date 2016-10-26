@@ -26,6 +26,7 @@ fn check_opcode_byte_values() {
     assert_eq!(15, OpCode::GreaterThan as u8);
     assert_eq!(16, OpCode::LessThanOrEq as u8);
     assert_eq!(17, OpCode::GreaterThanOrEq as u8);
+    assert_eq!(18, OpCode::SkipnIfNZ as u8);
 }
 
 #[test]
@@ -83,6 +84,8 @@ fn test_iter_instr_var_access() {
             1, 1, 0, 0, 0, 0, 0, 0, 0,
             // Add
             4,
+            // SkipnIfNZ
+            18, 1, 0, 0, 0, 0, 0, 0, 0,
         ]
     };
     let mut iter = bytecode.instr_iter();
@@ -106,4 +109,7 @@ fn test_iter_instr_var_access() {
         op: OpCode::Add,
         val: NULL_VAL
     }));
+    let skip_inst = iter.next().unwrap();
+    assert_eq!(skip_inst.op, OpCode::SkipnIfNZ);
+    assert_eq!(skip_inst.val.raw_bits(), 1);
 }

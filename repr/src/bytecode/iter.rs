@@ -33,18 +33,18 @@ impl<'a> Iterator for InstrIter<'a> {
         }
 
         if let Some(op) = self.bytecode.code.get(self.cursor).cloned() {
-            let op = u8::from_le(op);
             self.cursor += 1;
             let cursor = self.cursor;
             // XXX: Is there a way to obtain the number of variant?
-            if op >= 18u8 {
+            if op >= 19u8 {
                 return None;
             }
             let inst = match unsafe { mem::transmute::<u8, OpCode>(op) } {
                 // Constant stack push (f32)
                 // Var access push (u32)
                 op @ OpCode::Const |
-                op @ OpCode::VarAccess => {
+                op @ OpCode::VarAccess |
+                op @ OpCode::SkipnIfNZ => {
                     let ref v = self.bytecode.code;
                     let arr: [u8; 8] = [
                         v[cursor+0], v[cursor+1], v[cursor+2], v[cursor+3],
@@ -56,6 +56,8 @@ impl<'a> Iterator for InstrIter<'a> {
                     if op == OpCode::Const {
                         let number = unsafe { mem::transmute::<u64, f64>(number) };
                         instr(op, Value::from(number))
+                    } else if op == OpCode::SkipnIfNZ {
+                        instr(op, unsafe { mem::transmute::<u64, Value>(number) })
                     } else {
                         instr(op, Value::from(number))
                     }

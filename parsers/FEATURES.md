@@ -6,7 +6,7 @@
 | ----------------------- | ----------------------- | ------------------ |
 | Import lookup rule      |           *TBD*         |                    |
 | Parse view              |          **Done**       |                    |
-| Parse component          |          **Done**       |                    |
+| Parse component         |          **Done**       |                    |
 | Parse class             |          **Done**       |                    |
 | Type-check              |           *TBD*         |                    |
 | Symbol resolution       |           *TBD*         |                    |

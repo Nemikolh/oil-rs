@@ -1,0 +1,42 @@
+import {shop, inventory, item} from './shop_inventory.style.oil';
+import {center, single_line, btn} from './shop_inventory.style';
+
+view main() {
+
+    <group>
+        Welcome to my shop !
+        <group class={ .center; .single_line; }">
+            <group class={shop}>
+                <group class={single_line}>Shop</group>
+                <button class={item}></button>
+                <button class={item}></button>
+                <button class={item}></button>
+                <button class={item}></button>
+            </group>
+            <group class={inventory}>
+                <group class={single_line}>Inventory</group>
+                <button class={item}></button>
+                <button class={item}></button>
+                <button class={item}></button>
+                <button class={item}></button>
+            </group>
+        </group>
+        <group class={center}>
+            <group class={shop}>
+                <group class={single_line}>Shop</group>
+                <button class={item}></button>
+                <button class={item}></button>
+                <button class={item}></button>
+                <button class={item}></button>
+            </group>
+            <group class={inventory}>
+                <group class={single_line}>Inventory</group>
+                <button class={item}></button>
+                <button class={item}></button>
+                <button class={item}></button>
+                <button class={item}></button>
+            </group>
+        </group>
+        <button class={.center; .btn;}>Quit</button>
+    </group>
+}

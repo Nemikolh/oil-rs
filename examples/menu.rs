@@ -10,8 +10,6 @@ fn main() {
 
     util::run_example(
         "oil - menu example",
-        "./examples/menu.markup",
-        "./examples/menu.deps",
-        "./examples/menu.style"
+        "./examples/menu.oil"
     );
 }

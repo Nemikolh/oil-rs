@@ -2,60 +2,70 @@ use super::*;
 
 pub trait PackageVisitor {
 
-    fn visit_import(&mut self,  item: &mut Import);
-    fn visit_view(&mut self, item: &mut View);
-    fn visit_class(&mut self,  item: &mut Class);
-    fn visit_datatype(&mut self,  item: &mut DataType);
-    fn visit_component(&mut self,  item: &mut Component);
-    fn visit_node(&mut self, item: &mut Node);
+    fn visit_import(&mut self,  item: &Import) {
+        walk_import(item, self);
+    }
+    fn visit_view(&mut self, item: &View) {
+        walk_view(item, self);
+    }
+    fn visit_class(&mut self,  item: &Class) {
+        walk_class(item, self);
+    }
+    fn visit_component(&mut self,  item: &Component) {
+        walk_component(item, self);
+    }
+    fn visit_node(&mut self, item: &Node) {
+        walk_node(item, self);
+    }
+    fn visit_ident(&mut self, item: &Ident) {}
+
+    fn visit_const(&mut self, item: &ConstValue) {}
 }
 
-/// Traverse the AST and call visitor methods
+/// Walk the AST and call visitor methods
 /// where appropriate.
-pub fn traverse<T: PackageVisitor>(ast: &mut Package, visitor: &mut T) {
+pub fn walk<T: PackageVisitor>(ast: &Package, visitor: &mut T) {
     // Visit imports first
     for import in ast.imports.iter_mut() {
         visitor.visit_import(import);
     }
     // Visit items in order
     for item in ast.items.iter_mut() {
-        traverse_item(item, visitor);
+        walk_item(item, visitor);
     }
 }
 
-fn traverse_item<T: PackageVisitor>(item: &mut Item, visitor: &mut T) {
-    match item {
-        &mut Item::View(ref mut item) => traverse_view(item, visitor),
-        &mut Item::Class(ref mut item) => traverse_class(item, visitor),
-        &mut Item::DataType(ref mut item) => traverse_datatype(item, visitor),
-        &mut Item::Component(ref mut item) => traverse_component(item, visitor),
+pub fn walk_item<T: PackageVisitor>(item: &Item, visitor: &mut T) {
+    match *item {
+        Item::View(ref item) => visitor.visit_view(item),
+        Item::Class(ref item) => visitor.visit_class(item),
+        Item::Component(ref item) => visitor.visit_component(item),
     }
 }
 
-fn traverse_view<T: PackageVisitor>(item: &mut View, visitor: &mut T) {
-    visitor.visit_view(item);
-    traverse_node(&mut item.node, visitor)
+pub fn walk_view<T: PackageVisitor>(item: &View, visitor: &mut T) {
+    walk_node(&mut item.node, visitor)
 }
 
-fn traverse_class<T: PackageVisitor>(item: &mut Class, visitor: &mut T) {
-    visitor.visit_class(item);
+pub fn walk_import<T: PackageVisitor>(item: &Import, visitor: &mut T) {
+    // FIXME
 }
 
-fn traverse_datatype<T: PackageVisitor>(item: &mut DataType, visitor: &mut T) {
-    visitor.visit_datatype(item);
+pub fn walk_class<T: PackageVisitor>(item: &Class, visitor: &mut T) {
+    for ident in &item.arguments {
+        visitor.visit_ident(ident);
+    }
 }
 
-fn traverse_component<T: PackageVisitor>(item: &mut Component, visitor: &mut T) {
-    visitor.visit_component(item);
+pub fn walk_component<T: PackageVisitor>(item: &Component, visitor: &mut T) {
     for item in item.nodes.iter_mut() {
-        traverse_node(item, visitor);
+        visitor.visit_component(item);
     }
 }
 
-fn traverse_node<T: PackageVisitor>(item: &mut Node, visitor: &mut T) {
-    visitor.visit_node(item);
+pub fn walk_node<T: PackageVisitor>(item: &Node, visitor: &mut T) {
     for item in item.children.iter_mut() {
-        traverse_node(item, visitor);
+        visitor.visit_node(item);
     }
 }
 
@@ -73,24 +83,24 @@ mod test {
     }
 
     impl PackageVisitor for TestVisitor {
-        fn visit_import(&mut self, item: &mut Import) {
+        fn visit_import(&mut self, item: &Import) {
             self.import_count += 1;
             assert_eq!(item.path, "some-import");
         }
-        fn visit_view(&mut self, item: &mut View) {
+        fn visit_view(&mut self, item: &View) {
             assert!(false);
         }
-        fn visit_class(&mut self, item: &mut Class) {
+        fn visit_class(&mut self, item: &Class) {
             assert_eq!(item.name, "btn");
         }
-        fn visit_datatype(&mut self, item: &mut DataType) {
+        fn visit_datatype(&mut self, item: &DataType) {
             assert!(false);
         }
-        fn visit_component(&mut self, item: &mut Component) {
+        fn visit_component(&mut self, item: &Component) {
             self.component_count += 1;
             assert_eq!(item.name, "el");
         }
-        fn visit_node(&mut self, item: &mut Node) {
+        fn visit_node(&mut self, item: &Node) {
             match self.node_count {
                 0 => if let NodeKind::Tag { ref name, .. } = item.kind {
                     assert_eq!(name, "a");
@@ -114,7 +124,7 @@ mod test {
     }
 
     #[test]
-    fn test_traverse_package() {
+    fn test_walk_package() {
         let test = r#"
         import 'some-import';
         component el = <a>some text<b><c></c></b><d></d></a>;
@@ -123,9 +133,9 @@ mod test {
             prop: 3 px if true;
         }
         "#;
-        let mut package = parse_grammar(test).unwrap();
+        let package = parse_grammar(test).unwrap();
         let mut visitor = TestVisitor::default();
-        traverse(&mut package, &mut visitor);
+        walk(&package, &mut visitor);
         assert_eq!(visitor.node_count, 5);
         assert_eq!(visitor.import_count, 1);
         assert_eq!(visitor.component_count, 1);

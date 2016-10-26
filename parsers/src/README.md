@@ -12,8 +12,7 @@ Errors can only be caused by:
 * Valid identifier.
 * Valid style value (number + unit)
 * Image and font special import syntax.
-* Special property like `background-image` or `font`.
-* Component, View and Class definition.
+* Const, Component, View and Class definition.
 
 ## Second pass: `import`
 

@@ -1,0 +1,23 @@
+import $btn from './btn.png';
+
+const $btn_notselected = $btn[0, 132, 400, 40];
+const $btn_selected: $btn[0, 172, 400, 40];
+
+.btn() {
+    width: 100px;
+    height: 40px;
+    background_image: $btn_notselected;
+    background_image_rule: "fit";
+    &:focus {
+        background_image: $btn_selected;
+    }
+}
+
+view main() =
+    <button class={btn}></button>
+    <button class={btn}></button>
+    <button class={btn}></button>
+    <button class={btn}></button>
+    <button class={btn}></button>
+    <button class={btn}></button>
+;
