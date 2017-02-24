@@ -51,6 +51,7 @@ the one understood by oil such as:
 * `for` (previously named `repeat`)
 * [new] `if`
 * [new] `switch`
+* [new] `case`
 
 > Design question:
 >     Do we want to allows other symbols to be defined globally?
