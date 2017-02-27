@@ -11,7 +11,7 @@ pub fn parse_grammar<'input>(input: &'input str)
                              -> Result<ast::Package, Error<'input>>
 {
     let tokenizer = tok::Tokenizer::new(input, 0);
-    oil::parse_ui_package(tokenizer)
+    oil::parse_ui_package(&ast::builder::ASTFullSpan, tokenizer)
 }
 
 

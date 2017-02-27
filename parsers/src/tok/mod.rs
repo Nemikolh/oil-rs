@@ -1,7 +1,6 @@
 use std::str::CharIndices;
 use std::slice;
 use std::str;
-use std::cmp::{min, max};
 use std::ops::Deref;
 use std::marker::PhantomData;
 use std::fmt;
@@ -50,26 +49,6 @@ impl<'input> fmt::Debug for StrView<'input> {
 }
 
 impl<'input> StrView<'input> {
-    fn from(text: &'input str, start: usize, end: usize) -> StrView<'input> {
-        assert!(start < text.len());
-        assert!(end <= text.len());
-        StrView {
-            ptr: text.as_ptr(),
-            begin_at: start,
-            finish_at: end,
-            phantom: PhantomData,
-        }
-    }
-
-    pub fn merge(&self, other: StrView<'input>) -> StrView<'input> {
-        assert_eq!(self.ptr, other.ptr);
-        StrView {
-            ptr: self.ptr,
-            begin_at: min(self.begin_at, other.begin_at),
-            finish_at: max(self.finish_at, other.finish_at),
-            phantom: PhantomData,
-        }
-    }
 
     pub fn as_str(&self) -> &'input str {
         unsafe {
@@ -112,9 +91,7 @@ pub enum Tok<'input> {
 
     TextNode(&'input str),
 
-    // Identifiers of various kinds:
-    DotId(StrView<'input>),
-    Id(StrView<'input>),
+    Id(&'input str),
 
     // Symbols:
     Arrow,
@@ -146,7 +123,9 @@ pub enum Tok<'input> {
     Star,
     Colon,
     Comma,
+    Dot,
     Ampersand,
+    Question,
 }
 
 pub struct Tokenizer<'input> {
@@ -177,7 +156,7 @@ const KEYWORDS: &'static [(&'static str, Tok<'static>)] = &[
     ("component", Component),
     ("let", Let),
     ("const", Const),
-    ("@if", If),
+    ("if", If),
     ("true", True),
     ("false", False),
     ];
@@ -355,8 +334,8 @@ impl<'input> Tokenizer<'input> {
                 Some((idx0, '$')) if self.not_text() => {
                     // TODO: merge this with identifier branch.
                     self.bump();
-                    let (_, _, end) = self.word(idx0);
-                    Some(Ok((idx0, Id(StrView::from(self.text, idx0, end)), end)))
+                    let (_, word, end) = self.word(idx0);
+                    Some(Ok((idx0, Id(word), end)))
                 }
                 Some((idx0, '!')) if self.not_text() => {
                     match self.bump() {
@@ -385,8 +364,11 @@ impl<'input> Tokenizer<'input> {
                 }
                 Some((idx0, '.')) if self.not_text() => {
                     self.bump();
-                    let (start, _, end) = self.word(idx0);
-                    Some(Ok((start, DotId(StrView::from(self.text, start, end)), end)))
+                    Some(Ok((idx0, Dot, idx0+1)))
+                }
+                Some((idx0, '?')) if self.not_text() => {
+                    self.bump();
+                    Some(Ok((idx0, Question, idx0+1)))
                 }
                 Some((idx0, '=')) if self.not_text() => {
                     match (self.bump(), self.go_in_component()) {
@@ -510,7 +492,7 @@ impl<'input> Tokenizer<'input> {
                     .filter(|&&(w, _)| w == word)
                     .map(|&(_, ref t)| t.clone())
                     .next()
-                    .unwrap_or_else(|| Id(StrView::from(self.text, start, end)));
+                    .unwrap_or_else(|| Id(word));
 
         if tok == Component || tok == View {
             self.state = TokState::WaitingForEq;

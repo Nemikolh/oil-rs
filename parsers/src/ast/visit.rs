@@ -1,10 +1,9 @@
 use super::*;
 
-pub trait PackageVisitor {
+pub trait PackageVisitor: Sized {
 
-    fn visit_import(&mut self,  item: &Import) {
-        walk_import(item, self);
-    }
+    fn visit_import(&mut self,  item: &Import);
+
     fn visit_view(&mut self, item: &View) {
         walk_view(item, self);
     }
@@ -17,20 +16,24 @@ pub trait PackageVisitor {
     fn visit_node(&mut self, item: &Node) {
         walk_node(item, self);
     }
-    fn visit_ident(&mut self, item: &Ident) {}
 
-    fn visit_const(&mut self, item: &ConstValue) {}
+    fn visit_ident(&mut self, _item: &Ident) {}
+    fn visit_const(&mut self, _item: &ConstValue) {}
+
+    fn visit_component_body(&mut self, item: &ComponentBody) {
+        walk_component_body(item, self);
+    }
 }
 
 /// Walk the AST and call visitor methods
 /// where appropriate.
 pub fn walk<T: PackageVisitor>(ast: &Package, visitor: &mut T) {
     // Visit imports first
-    for import in ast.imports.iter_mut() {
+    for import in &ast.imports {
         visitor.visit_import(import);
     }
     // Visit items in order
-    for item in ast.items.iter_mut() {
+    for item in &ast.items {
         walk_item(item, visitor);
     }
 }
@@ -44,11 +47,7 @@ pub fn walk_item<T: PackageVisitor>(item: &Item, visitor: &mut T) {
 }
 
 pub fn walk_view<T: PackageVisitor>(item: &View, visitor: &mut T) {
-    walk_node(&mut item.node, visitor)
-}
-
-pub fn walk_import<T: PackageVisitor>(item: &Import, visitor: &mut T) {
-    // FIXME
+    walk_node(&item.node, visitor)
 }
 
 pub fn walk_class<T: PackageVisitor>(item: &Class, visitor: &mut T) {
@@ -58,13 +57,18 @@ pub fn walk_class<T: PackageVisitor>(item: &Class, visitor: &mut T) {
 }
 
 pub fn walk_component<T: PackageVisitor>(item: &Component, visitor: &mut T) {
-    for item in item.nodes.iter_mut() {
-        visitor.visit_component(item);
+    visitor.visit_component_body(&item.body);
+}
+
+pub fn walk_component_body<T: PackageVisitor>(item: &ComponentBody, visitor: &mut T) {
+    match *item {
+        ComponentBody::PreludeThenSingleNode(_, ref node) => visitor.visit_node(node),
+        ComponentBody::SingleNode(ref node) => visitor.visit_node(node),
     }
 }
 
 pub fn walk_node<T: PackageVisitor>(item: &Node, visitor: &mut T) {
-    for item in item.children.iter_mut() {
+    for item in &item.children {
         visitor.visit_node(item);
     }
 }

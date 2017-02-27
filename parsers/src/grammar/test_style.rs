@@ -43,44 +43,44 @@ fn test_oil_style_class_def_with_arg_used_as_property() {
 
 #[test]
 fn test_oil_style_class_def_condition_eq() {
-    let style = r#".a { .b() @if c == d; }"#;
+    let style = r#".a { .b() if c == d; }"#;
     parse_grammar(style).unwrap();
 }
 
 #[test]
 fn test_oil_style_class_def_condition_neq() {
-    let style = r#".a { .b() @if c != d; }"#;
+    let style = r#".a { .b() if c != d; }"#;
     parse_grammar(style).unwrap();
 }
 
 #[test]
 fn test_oil_style_class_def_condition_and() {
-    let style = r#".a { .b() @if c && d; }"#;
+    let style = r#".a { .b() if c && d; }"#;
     parse_grammar(style).unwrap();
 }
 
 #[test]
 fn test_oil_style_class_def_condition_or() {
-    let style = r#".a { .b @if c || d; }"#;
+    let style = r#".a { .b if c || d; }"#;
     parse_grammar(style).unwrap();
 }
 
 #[test]
 fn test_oil_style_class_def_condition_many1() {
-    let style = r#".a { .b @if (c || d) && d; }"#;
+    let style = r#".a { .b if (c || d) && d; }"#;
     parse_grammar(style).unwrap();
 }
 
 #[test]
 fn test_oil_style_class_def_condition_many2() {
-    let style = r#".a { .b @if c || (d && d); }"#;
+    let style = r#".a { .b if c || (d && d); }"#;
     parse_grammar(style).unwrap();
 }
 
 #[test]
 fn test_oil_style_class_def_conditionally_include() {
     let style = r#".some_class (a, b) {
-        .other_class @if a == b;
+        .other_class if a == b;
     }"#;
     parse_grammar(style).unwrap();
 }
@@ -88,7 +88,7 @@ fn test_oil_style_class_def_conditionally_include() {
 #[test]
 fn test_oil_style_class_def_conditionally_include2() {
     let style = r#".some_class (a, b) {
-        .other_class(fit, rtl) @if a == b;
+        .other_class(fit, rtl) if a == b;
     }"#;
     parse_grammar(style).unwrap();
 }
@@ -96,8 +96,8 @@ fn test_oil_style_class_def_conditionally_include2() {
 #[test]
 fn test_oil_style_class_def_conditionally_properties() {
     let style = r#".some_class (a, b) {
-        background_color: #FFFFFF @if a;
-        background_image: $img    @if b;
+        background_color: #FFFFFF if a;
+        background_image: $img    if b;
     }"#;
     parse_grammar(style).unwrap();
 }
@@ -158,6 +158,7 @@ fn test_oil_style_sub_img_implicit() {
 }
 
 #[test]
+#[ignore]
 fn test_oil_style_entire_img_alternatives() {
     { let style = r#".btn { background_image: $img[]; }"#; parse_grammar(style).unwrap(); }
     { let style = r#".btn { background_image: $img; }"#; parse_grammar(style).unwrap(); }
@@ -169,8 +170,8 @@ fn test_oil_style_expression_in_properties() {
         margin_x: a.mx / 2 px;
         margin_y: (a.my + 34) / 4 px;
         // Testing multiples offset.
-        x: 0 px     @if a.ox + 1 > 23;
-        x: a.mx / 2 @if a.other;
+        x: 0 px     if a.ox + 1 > 23;
+        x: a.mx / 2 if a.other;
     }"#;
     parse_grammar(style).unwrap();
 }
@@ -178,8 +179,8 @@ fn test_oil_style_expression_in_properties() {
 #[test]
 fn test_oil_style_keywords() {
     let style = r#".kwds(a) {
-        width: "auto" @if a;
-        margin: "expand" @if b;
+        width: "auto" if a;
+        margin: "expand" if b;
     }"#;
     parse_grammar(style).unwrap();
 }

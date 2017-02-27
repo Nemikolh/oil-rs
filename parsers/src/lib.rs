@@ -26,7 +26,7 @@ use std::path::Path;
 use pass_resolve::pass_resolve_packages_from_root;
 
 pub fn compile<P: AsRef<Path>>(input: P) -> Result<oil_repr::OilLibrary, CompileError> {
-    let program = try!(pass_resolve_packages_from_root(input));
+    let _ = try!(pass_resolve_packages_from_root(input));
     // let mut ast = try!(grammar::parse_grammar(&s));
     // try!(pass_resolve::pass_resolve_names(&mut ast));
     Ok(())

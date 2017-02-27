@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use lalrpop_intern::InternedString;
 
 pub mod visit;
+pub mod builder;
 
 #[cfg(test)]
 mod test;
@@ -69,11 +70,7 @@ pub enum Item {
 #[derive(Clone, Debug, PartialEq)]
 pub struct View {
     /// Name of the view.
-    pub name: InternedString,
-    /// Name of the model parameter
-    pub model_name: InternedString,
-    /// Name of the handlers parameter
-    pub handlers_name: InternedString,
+    pub name: Ident,
     /// Single root node that start the view.
     pub node: Node,
 }
@@ -87,7 +84,7 @@ pub struct ConstValue {
     /// True if the type is visible outside of this `Package`.
     pub exported: bool,
     /// Name of the data type
-    pub name: InternedString,
+    pub name: Ident,
     /// Properties of for each value of that type
     /// and their default value (can use arguments)
     pub object: ObjectValue,
@@ -189,13 +186,19 @@ pub struct Component {
     /// Is this component visible outside of this Package?
     pub exported: bool,
     /// Name of the component
-    pub name: InternedString,
+    pub name: Ident,
     /// Arguments name accepted by the component
     pub arguments: Vec<Ident>,
     /// Events accepted by the component
     pub events: Vec<Ident>,
-    /// Children of this component
-    pub nodes: Vec<Node>,
+    /// Component body
+    pub body: ComponentBody,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ComponentBody {
+    SingleNode(Node),
+    PreludeThenSingleNode(Option<()>, Node),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -220,8 +223,10 @@ pub enum NodeKind {
     Binding {
         /// The binding is done on the following
         /// property.
-        property: InternedString,
+        property: PathExpr,
     },
+    /// A node aggregating other nodes with no particular semantics.
+    NoType,
     /// A generic tag use `<tag></tag>`
     Tag {
         /// The name of the tag.
@@ -249,8 +254,6 @@ pub enum AnonymousClassOrIdent {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ObjectValue {
-    /// A string literal
-    StrLit(InternedString),
     /// An expression
     Expr(Box<Expr>),
     /// A list of properties
@@ -263,20 +266,50 @@ pub enum ObjectValue {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
-    /// Boolean,
-    Boolean(bool),
-    /// A raw number
-    Number(f32),
-    /// A var access such as `a.b.c`
-    VarAccess(InternedString),
-    /// A new model instance: `new ModelName(a, b)`
-    New(String, Vec<ObjectValue>),
+    /// A constant known at compile time.
+    Constant(Constant),
+    /// A path expression such as `a.b.c?`
+    PathExpr(PathExpr),
     /// A binary operation between two things such as `a + b`
     BinaryOp(Box<Expr>, OpCode, Box<Expr>),
     /// Bit negation of an expression
     Not(Box<Expr>),
     /// A signed expression.
     Signed(Sign, Box<Expr>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Constant {
+    /// Boolean,
+    Boolean(bool),
+    /// Floating point value
+    Float(f64),
+    /// Integer value
+    Integer(i32),
+    /// String literal
+    StrLit(InternedString),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum PathExpr {
+    /// A variable
+    Variable(Ident),
+    /// A check for an optional value.
+    Option {
+        opt: Box<PathExpr>,
+    },
+    /// A property being accessed.
+    PropertyAccess {
+        map: Box<PathExpr>,
+        property: Ident,
+    },
+    /// An index being accessed.
+    Index {
+        map: Box<PathExpr>,
+        // TODO: Replace this with an expression.
+        //       We could have anything here.
+        index: Constant,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

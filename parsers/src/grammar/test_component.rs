@@ -59,7 +59,7 @@ fn test_oil_basic_component_with_args_export() {
 #[should_panic]
 fn test_oil_basic_component_with_args_export() {
     let component = r#"
-    export component ui_el [el_class] =
+    export component ui_el[el_class] =
         <el class=el_class></el>;
     "#;
     parse_grammar(component).unwrap();
