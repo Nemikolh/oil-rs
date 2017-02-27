@@ -1,9 +1,5 @@
 use std::str::CharIndices;
-use std::slice;
 use std::str;
-use std::ops::Deref;
-use std::marker::PhantomData;
-use std::fmt;
 use unicode_xid::UnicodeXID;
 
 use self::ErrorCode::*;
@@ -32,40 +28,6 @@ pub enum ErrorCode {
 
 fn error<T>(c: ErrorCode, l: usize) -> Result<T,Error> {
     Err(Error { location: l, code: c })
-}
-
-#[derive(Clone, PartialEq, Eq)]
-pub struct StrView<'input> {
-    ptr: *const u8,
-    begin_at: usize,
-    finish_at: usize,
-    phantom: PhantomData<&'input str>
-}
-
-impl<'input> fmt::Debug for StrView<'input> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-impl<'input> StrView<'input> {
-
-    pub fn as_str(&self) -> &'input str {
-        unsafe {
-            let len = self.finish_at - self.begin_at;
-            let ptr = self.ptr.offset(self.begin_at as isize);
-            let slice = slice::from_raw_parts(ptr, len);
-            // TODO: Use 'str::from_utf8_unchecked' instead
-            str::from_utf8(slice).unwrap()
-        }
-    }
-}
-
-impl<'input> Deref for StrView<'input> {
-    type Target = str;
-    fn deref(&self) -> &Self::Target {
-        self.as_str()
-    }
 }
 
 

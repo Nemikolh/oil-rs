@@ -77,6 +77,8 @@ pub fn walk_node<T: PackageVisitor>(item: &Node, visitor: &mut T) {
 mod test {
 
     use ast::*;
+    use super::PackageVisitor;
+    use super::{walk_node, walk, walk_component};
     use grammar::parse_grammar;
 
     #[derive(Default)]
@@ -89,41 +91,40 @@ mod test {
     impl PackageVisitor for TestVisitor {
         fn visit_import(&mut self, item: &Import) {
             self.import_count += 1;
-            assert_eq!(item.path, "some-import");
+            assert_variant!(item.package, SubPackage::UnresolvedPath);
         }
-        fn visit_view(&mut self, item: &View) {
+        fn visit_view(&mut self, _item: &View) {
             assert!(false);
         }
         fn visit_class(&mut self, item: &Class) {
-            assert_eq!(item.name, "btn");
-        }
-        fn visit_datatype(&mut self, item: &DataType) {
-            assert!(false);
+            assert_eq!(item.name.name.to_string(), "btn");
         }
         fn visit_component(&mut self, item: &Component) {
             self.component_count += 1;
-            assert_eq!(item.name, "el");
+            assert_eq!(item.name.name.to_string(), "el");
+            walk_component(item, self);
         }
         fn visit_node(&mut self, item: &Node) {
             match self.node_count {
                 0 => if let NodeKind::Tag { ref name, .. } = item.kind {
-                    assert_eq!(name, "a");
+                    assert_eq!(name.to_string(), "a");
                 } else { assert!(false); },
                 1 => if let NodeKind::Text { ref content } = item.kind {
-                    assert_eq!(content, "some text");
+                    assert_eq!(content.to_string(), "some text");
                 } else { assert!(false); },
                 2 => if let NodeKind::Tag { ref name, .. } = item.kind {
-                    assert_eq!(name, "b");
+                    assert_eq!(name.to_string(), "b");
                 } else { assert!(false); },
                 3 => if let NodeKind::Tag { ref name, .. } = item.kind {
-                    assert_eq!(name, "c");
+                    assert_eq!(name.to_string(), "c");
                 } else { assert!(false); },
                 4 => if let NodeKind::Tag { ref name, .. } = item.kind {
-                    assert_eq!(name, "d");
+                    assert_eq!(name.to_string(), "d");
                 } else { assert!(false); },
                 _ => assert!(false),
             }
             self.node_count += 1;
+            walk_node(item, self);
         }
     }
 
@@ -133,8 +134,8 @@ mod test {
         import 'some-import';
         component el = <a>some text<b><c></c></b><d></d></a>;
         .btn {
-            prop: 4 px;
-            prop: 3 px if true;
+            prop: 4;
+            prop: 3 if true;
         }
         "#;
         let package = parse_grammar(test).unwrap();

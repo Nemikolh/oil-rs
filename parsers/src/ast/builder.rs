@@ -38,6 +38,9 @@ pub trait ASTBuilder {
             node: node,
         }
     }
+    fn style_value(expr: Expr) -> StyleValue {
+        StyleValue::Unspecified(Box::new(expr))
+    }
     fn constant<'input>(value: &'input str) -> Constant {
         if let Ok(value) = i32::from_str_radix(value, 10) {
             Constant::Integer(value)
@@ -117,11 +120,15 @@ impl ASTBuilder for ASTFullSpan {
         }
     }
 
-    fn node_agg(span: Span, children: Vec<Node>) -> Node {
-        Node {
-            span: span,
-            children: children,
-            kind: NodeKind::NoType,
+    fn node_agg(span: Span, mut children: Vec<Node>) -> Node {
+        if children.len() == 1 {
+            children.pop().unwrap()
+        } else {
+            Node {
+                span: span,
+                children: children,
+                kind: NodeKind::NoType,
+            }
         }
     }
 

@@ -11,11 +11,10 @@ macro_rules! assert_err_code {
                     code: $code,
                     ..
                 }
-            }) => assert!(true),
+            }) => (),
             c => {
                 println!("Found: {:?}", c);
-                println!("Expected: Err({:?})", $code);
-                assert!(false)
+                panic!("Expected: Err({:?})", $code);
             }
         }
     );
@@ -33,20 +32,14 @@ fn test_error_unmatchintag_in_component_or_view() {
     assert_err_code!(component, tok::ErrorCode::UnmatchingTag)
 }
 
-#[test]
-fn test_error_invalid_select() {
-    let component = r#"component tmp = <why:we/>;"#;
-    assert_err_code!(component, tok::ErrorCode::InvalidSelect)
-}
+// #[test]
+// fn test_error_invalid_select() {
+//     let component = r#"component tmp = <why:we/>;"#;
+//     assert_err_code!(component, tok::ErrorCode::InvalidSelect)
+// }
 
-#[test]
-fn test_error_invalid_query() {
-    let component = r#"component tmp = <select:we/>;"#;
-    assert_err_code!(component, tok::ErrorCode::InvalidQuery)
-}
-
-#[test]
-fn test_error_invalid_style_property() {
-    let style = r#".some { test: 234zef;}"#;
-    assert_err_code!(style, tok::ErrorCode::InvalidUnit)
-}
+// #[test]
+// fn test_error_invalid_query() {
+//     let component = r#"component tmp = <select:we/>;"#;
+//     assert_err_code!(component, tok::ErrorCode::InvalidQuery)
+// }

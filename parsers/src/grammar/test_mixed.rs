@@ -15,7 +15,7 @@ fn test_mixed_style_component() {
     }
 
     // This component is local to this class
-    component local_btn = <button class=local_class><select:children /></button>;
+    component local_btn = <button class=local_class>{{children}}</button>;
 
     // ui_element is exported and can be used elsewhere
     export component ui_element [name, progress] =

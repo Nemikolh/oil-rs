@@ -156,7 +156,7 @@ node_events: (Ident, ()) = {
 //
 
 eventchain: () = {
-    // TODO
+    expression => (),
 };
 
 // =================================
@@ -210,8 +210,9 @@ style_condition: Box<Expr> = {
 };
 
 style_value: StyleValue = {
-    <s:"StringLiteral"> => StyleValue::Keyword(intern(s)),
-    <h:"Hex"> => StyleValue::Hex(intern(h)),
+    "Hex" => StyleValue::Hex(intern(<>)),
+    expression => B::style_value(<>),
+
     // <le:@L> <e:expression> <li:@L> <prop:img_view_or_unit?> =>? {
     //     match prop {
     //         Some(ImgViewOrUnit::ImgView(sub_img)) => {
