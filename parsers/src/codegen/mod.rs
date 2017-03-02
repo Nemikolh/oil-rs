@@ -2,6 +2,7 @@ use std::rc::Rc;
 use ast::OpCode;
 use ast::Expr;
 use store::StoreType;
+use std::fmt::{Display, Formatter, self};
 
 
 use self::render::Render;
@@ -37,10 +38,24 @@ pub enum ExprIR {
     Constant(i32),
 }
 
+pub struct DotPath {
+    is_composite: bool,
+    path: String,
+}
+
+impl Display for DotPath {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        if self.is_composite {
+            write!(f, "{}", self.path)
+        } else {
+            write!(f, "*{}", self.path)
+        }
+    }
+}
 
 pub enum PathIR {
-    Match { path: String, children: Vec<PathIR> },
-    IntoIter { path: String, then: Box<PathIR> },
+    Match { path: DotPath, children: Vec<PathIR> },
+    IntoIter { path: DotPath, then: Box<PathIR> },
     Variant { path: String, name: String, then: Box<PathIR> },
     Some { path: String },
     VariantNone,

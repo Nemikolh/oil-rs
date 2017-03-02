@@ -64,14 +64,23 @@ impl<'a> ExprFolder for ExprIntoIRFolder<'a> {
     }
 
     fn fold_constant(&mut self, value: &Constant) -> Self::FoldType {
-        if let Constant::Integer(value) = *value {
-            let id = self.nid();
-            self.add_assign(AssignIR {
-                leftop: VarIR { id: id },
-                rightop: ExprIR::Constant(value)
-            })
-        } else {
-            unimplemented!()
+        match *value {
+            Constant::Integer(value) => {
+                let id = self.nid();
+                self.add_assign(AssignIR {
+                    leftop: VarIR { id: id },
+                    rightop: ExprIR::Constant(value)
+                })
+            }
+            Constant::Boolean(_value) => {
+                unimplemented!()
+            }
+            Constant::Float(_value) => {
+                unimplemented!()
+            }
+            Constant::StrLit(_value) => {
+                unimplemented!()
+            }
         }
     }
 

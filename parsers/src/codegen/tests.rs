@@ -46,13 +46,17 @@ fn rendering_test() {
         "store.a.b?c?"
     ).unwrap().unwrap_path()).unwrap(), 0).expect("No IR");
 
-    let first_assign = Rc::new(AssignIR {
+    let const_assign = Rc::new(AssignIR {
         leftop: VarIR { id: 0 },
+        rightop: ExprIR::Constant(42),
+    });
+    let first_assign = Rc::new(AssignIR {
+        leftop: VarIR { id: 1 },
         rightop: ExprIR::Path(ir),
     });
-    let ir = vec![first_assign.clone(), Rc::new(AssignIR {
-        leftop: VarIR { id: 1 },
-        rightop: ExprIR::BinaryOp(first_assign.clone(), OpCode::Add, first_assign.clone()),
+    let ir = vec![const_assign.clone(), first_assign.clone(), Rc::new(AssignIR {
+        leftop: VarIR { id: 2 },
+        rightop: ExprIR::BinaryOp(first_assign.clone(), OpCode::Add, const_assign.clone()),
     })];
     let mut output = String::new();
     IR { instructions: ir}.render(&mut output).unwrap();
@@ -66,14 +70,14 @@ fn make_store() -> StoreType {
         h.insert("a".to_string(), StoreType::Enum {
             variants: vec![
                 EnumVariant {
-                    name: "A1".into(),
+                    name: "EA::A1".into(),
                     variant_type: VariantType::Struct {
                         fields: {
                             let mut h = HashMap::new();
                             h.insert("b".into(), StoreType::Enum {
                                 variants: vec![
                                     EnumVariant {
-                                        name: "B2".into(),
+                                        name: "EB::B2".into(),
                                         variant_type: VariantType::Struct {
                                             fields: {
                                                 let mut h = HashMap::new();
@@ -90,7 +94,7 @@ fn make_store() -> StoreType {
                     },
                 },
                 EnumVariant {
-                    name: "A2".into(),
+                    name: "EA::A2".into(),
                     variant_type: VariantType::Struct {
                         fields: {
                             let mut h = HashMap::new();
@@ -106,7 +110,7 @@ fn make_store() -> StoreType {
                     },
                 },
                 EnumVariant {
-                    name: "A3".into(),
+                    name: "EA::A3".into(),
                     variant_type: VariantType::Struct {
                         fields: {
                             let mut h = HashMap::new();

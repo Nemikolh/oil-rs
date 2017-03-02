@@ -12,7 +12,6 @@ pub trait Render {
     fn render(&self, output: &mut String) -> Result<(), Error>;
 }
 
-
 impl Render for PathIR {
 
     fn render(&self, output: &mut String) -> Result<(), Error> {
@@ -45,7 +44,7 @@ impl Render for PathIR {
                 Ok(())
             }
             PathIR::Some { ref path } => {
-                writeln!(output, "Some({})", path)?;
+                writeln!(output, "Some({}.clone())", path)?;
                 Ok(())
             }
         }
@@ -96,7 +95,7 @@ impl Render for ExprIR {
                 }
             }
             ExprIR::Constant(constant) => {
-                writeln!(output, "{}", constant)?;
+                writeln!(output, "Some({})", constant)?;
                 Ok(())
             }
         }
