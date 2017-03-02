@@ -5,6 +5,8 @@ use lalrpop_intern::InternedString;
 
 pub mod visit;
 pub mod builder;
+pub mod folder;
+pub mod pathexpr;
 
 #[cfg(test)]
 mod test;
@@ -312,13 +314,13 @@ pub enum PathExpr {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Sign {
     Plus,
     Minus,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OpCode {
     Add,
     Sub,
