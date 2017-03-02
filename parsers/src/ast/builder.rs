@@ -93,50 +93,63 @@ pub trait ASTBuilder {
 
 /// Generate AST with proper span information
 pub struct ASTFullSpan;
+/// Generate AST with no span information (useful for testing)
+pub struct ASTNullSpan;
 
+macro_rules! impl_astbuilder {
+    ($implementer:ty, $opt:expr) => (
+        impl ASTBuilder for $implementer {
 
-impl ASTBuilder for ASTFullSpan {
+            #[inline(always)]
+            fn import(span: Span, symbols: ImportSymbols, path: InternedString) -> Import {
+                Import {
+                    span: $opt.unwrap_or(span),
+                    symbols: symbols,
+                    package: SubPackage::UnresolvedPath(path)
+                }
+            }
 
-    fn import(span: Span, symbols: ImportSymbols, path: InternedString) -> Import {
-        Import {
-            span: span,
-            symbols: symbols,
-            package: SubPackage::UnresolvedPath(path)
-        }
-    }
+            #[inline(always)]
+            fn ident(span: Span, name: InternedString) -> Ident {
+                Ident {
+                    span: $opt.unwrap_or(span),
+                    name: name,
+                }
+            }
 
-    fn ident(span: Span, name: InternedString) -> Ident {
-        Ident {
-            span: span,
-            name: name,
-        }
-    }
+            #[inline(always)]
+            fn node_txt(span: Span, content: InternedString) -> Node {
+                Node {
+                    span: $opt.unwrap_or(span),
+                    children: vec![],
+                    kind: NodeKind::Text { content: content },
+                }
+            }
 
-    fn node_txt(span: Span, content: InternedString) -> Node {
-        Node {
-            span: span,
-            children: vec![],
-            kind: NodeKind::Text { content: content },
-        }
-    }
+            #[inline(always)]
+            fn node_agg(span: Span, mut children: Vec<Node>) -> Node {
+                if children.len() == 1 {
+                    children.pop().unwrap()
+                } else {
+                    Node {
+                        span: $opt.unwrap_or(span),
+                        children: children,
+                        kind: NodeKind::NoType,
+                    }
+                }
+            }
 
-    fn node_agg(span: Span, mut children: Vec<Node>) -> Node {
-        if children.len() == 1 {
-            children.pop().unwrap()
-        } else {
-            Node {
-                span: span,
-                children: children,
-                kind: NodeKind::NoType,
+            #[inline(always)]
+            fn node_binding(span: Span, property: PathExpr) -> Node {
+                Node {
+                    span: $opt.unwrap_or(span),
+                    children: vec![],
+                    kind: NodeKind::Binding { property: property },
+                }
             }
         }
-    }
-
-    fn node_binding(span: Span, property: PathExpr) -> Node {
-        Node {
-            span: span,
-            children: vec![],
-            kind: NodeKind::Binding { property: property },
-        }
-    }
+    );
 }
+
+impl_astbuilder!(ASTFullSpan, None);
+impl_astbuilder!(ASTNullSpan, Some(Span(0, 0)));

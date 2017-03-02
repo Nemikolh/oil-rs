@@ -20,9 +20,9 @@ pub trait VariantTypeFolder {
             VariantType::Struct { ref fields } => {
                 // Navigate further to the field.
                 if let PropKind::Str(ref prop) = path[cur_index + 1].prop {
-                    read(|interner|
+                    return read(|interner|
                         if let Some(field) = fields.get(interner.data(*prop)) {
-                            Some(self.fold_variant_field(field, path, cur_index + 1))
+                            self.fold_variant_field(field, path, cur_index + 1)
                         } else {
                             None
                         }
@@ -82,9 +82,9 @@ pub trait StoreTypeFolder {
             (&StoreType::Struct { ref fields }, false) => {
                 // Navigate further to the field.
                 if let PropKind::Str(ref prop) = path[cur_index + 1].prop {
-                    read(|interner|
+                    return read(|interner|
                         if let Some(field) = fields.get(interner.data(*prop)) {
-                            Some(self.fold_field(field, path, cur_index + 1))
+                            self.fold_field(field, path, cur_index + 1)
                         } else {
                             None
                         }

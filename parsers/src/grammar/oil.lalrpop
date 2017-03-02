@@ -362,7 +362,7 @@ boolean_expression: Expr = {
     expression,
 };
 
-expression: Expr = {
+pub expression: Expr = {
     simple_expression,
     simple_expression relop simple_expression => B::binaryop(<>),
 };

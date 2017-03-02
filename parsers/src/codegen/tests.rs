@@ -3,35 +3,46 @@ use std::rc::Rc;
 use ast::OpCode;
 use store::{StoreType, EnumVariant, VariantType};
 use store::folder::StoreTypeFolder;
-use oil::parse_expression;
-use ast::ExprWithIdEqZero;
-use ast::path::into_linpath;
+use grammar::parse_expression_with_builder;
+use ast::builder::ASTNullSpan;
+use ast::{Expr, PathExpr};
+use ast::pathexpr::into_linpath;
 use super::store_folder::CompileFolder;
 use super::render::Render;
 use super::{AssignIR, ExprIR, VarIR, IR};
 
+impl Expr {
 
+    /// Unwrap this expression assuming it is a `PathExpression`.
+    /// If this fail, then the Expression was one of its other variant.
+    pub fn unwrap_path(self) -> PathExpr {
+        if let Expr::PathExpr(p) = self {
+            p
+        } else {
+            panic!("Expression is not a path!")
+        }
+    }
+}
 
 #[test]
 fn rendering_of_folder() {
-    let mut store = make_store();
+    let store = make_store();
     let mut folder = CompileFolder;
 
-    let ir = folder.fold(&store, &into_linpath(&parse_expression(&ExprWithIdEqZero,
+    let ir = folder.fold(&store, &into_linpath(&parse_expression_with_builder(ASTNullSpan,
         "store.a.b?c?"
     ).unwrap().unwrap_path()).unwrap(), 0).expect("No IR");
     let mut output = String::new();
-    ir.render(&mut output);
+    ir.render(&mut output).unwrap();
     println!("{}", output);
-//        assert_eq!(true, false);
 }
 
 #[test]
 fn rendering_test() {
-    let mut store = make_store();
+    let store = make_store();
     let mut folder = CompileFolder;
 
-    let ir = folder.fold(&store, &into_linpath(&parse_expression(&ExprWithIdEqZero,
+    let ir = folder.fold(&store, &into_linpath(&parse_expression_with_builder(ASTNullSpan,
         "store.a.b?c?"
     ).unwrap().unwrap_path()).unwrap(), 0).expect("No IR");
 
@@ -44,9 +55,8 @@ fn rendering_test() {
         rightop: ExprIR::BinaryOp(first_assign.clone(), OpCode::Add, first_assign.clone()),
     })];
     let mut output = String::new();
-    IR { instructions: ir}.render(&mut output);
+    IR { instructions: ir}.render(&mut output).unwrap();
     println!("{}", output);
-    assert_eq!(true, false);
 }
 
 
